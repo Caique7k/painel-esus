@@ -15,62 +15,63 @@ export class CallService {
     });
   }
 
-  async createCall(
-    patientName: string,
-    doctorName: string,
-    sectorName: string,
-  ) {
+  async createCall(patientName: string, doctorName: string) {
     const client = await this.pool.connect();
 
     try {
       await client.query('BEGIN');
 
-      //  garante setor
+      const sectorName = process.env.SECTOR_NAME;
+      if (!sectorName) {
+        throw new Error('SECTOR_NAME not defined');
+      }
+
+      // 1️⃣ Garante setor
       const sectorResult = await client.query(
         `
-        INSERT INTO sector (name)
-        VALUES ($1)
-        ON CONFLICT (name)
-        DO UPDATE SET name = EXCLUDED.name
-        RETURNING id
-        `,
+      INSERT INTO sector (name)
+      VALUES ($1)
+      ON CONFLICT (name)
+      DO UPDATE SET name = EXCLUDED.name
+      RETURNING id
+      `,
         [sectorName],
       );
 
       const sectorId = sectorResult.rows[0].id;
 
-      // cria chamada
+      // 2️⃣ Cria chamada
       const callResult = await client.query(
         `
-        INSERT INTO call (
-          patient_name,
-          doctor_name,
-          sector_id,
-          status,
-          started_at
-        )
-        VALUES ($1, $2, $3, 'calling', NOW())
-        RETURNING *
-        `,
+      INSERT INTO call (
+        patient_name,
+        doctor_name,
+        sector_id,
+        status
+      )
+      VALUES ($1, $2, $3, 'waiting')
+      RETURNING *
+      `,
         [patientName, doctorName, sectorId],
       );
 
-      const call = callResult.rows[0];
+      const callId = callResult.rows[0].id;
 
-      //  coloca na fila de áudio
+      // 3️⃣ Enfileira áudio
       await client.query(
         `
-        INSERT INTO audio_queue (call_id, status)
-        VALUES ($1, 'pending')
-        `,
-        [call.id],
+      INSERT INTO audio_queue (call_id)
+      VALUES ($1)
+      `,
+        [callId],
       );
 
       await client.query('COMMIT');
-      return call;
-    } catch (error) {
+
+      return callResult.rows[0];
+    } catch (err) {
       await client.query('ROLLBACK');
-      throw error;
+      throw err;
     } finally {
       client.release();
     }

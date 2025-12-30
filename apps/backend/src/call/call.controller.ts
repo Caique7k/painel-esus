@@ -11,7 +11,7 @@ export class CallController {
     @Body() body: { patientName: string; doctorName: string; roomName: string },
   ) {
     const { patientName, doctorName, roomName } = body;
-    return this.callService.createCall(patientName, doctorName, roomName);
+    return this.callService.createCall(patientName, doctorName);
   }
 
   // Endpoint para listar todas as chamadas
