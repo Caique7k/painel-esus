@@ -15,45 +15,86 @@ export class CallService {
     });
   }
 
-  async createCall(patientName: string, doctorName: string, roomName: string) {
+  async createCall(
+    patientName: string,
+    doctorName: string,
+    sectorName: string,
+  ) {
     const client = await this.pool.connect();
+
     try {
-      // cria sala se não existir
-      const roomResult = await client.query(
-        `INSERT INTO room (name) VALUES ($1) ON CONFLICT (name) DO UPDATE SET name=EXCLUDED.name RETURNING id`,
-        [roomName],
-      );
-      const roomId = roomResult.rows[0].id;
+      await client.query('BEGIN');
 
-      // cria paciente se não existir
-      const patientResult = await client.query(
-        `INSERT INTO patient (name) VALUES ($1) ON CONFLICT (name) DO UPDATE SET name=EXCLUDED.name RETURNING id`,
-        [patientName],
+      //  garante setor
+      const sectorResult = await client.query(
+        `
+        INSERT INTO sector (name)
+        VALUES ($1)
+        ON CONFLICT (name)
+        DO UPDATE SET name = EXCLUDED.name
+        RETURNING id
+        `,
+        [sectorName],
       );
-      const patientId = patientResult.rows[0].id;
 
-      // insere chamada
+      const sectorId = sectorResult.rows[0].id;
+
+      // cria chamada
       const callResult = await client.query(
-        `INSERT INTO call_history (patient_id, doctor_name, room_id, called_at)
-       VALUES ($1, $2, $3, NOW()) RETURNING *`,
-        [patientId, doctorName, roomId],
+        `
+        INSERT INTO call (
+          patient_name,
+          doctor_name,
+          sector_id,
+          status,
+          started_at
+        )
+        VALUES ($1, $2, $3, 'calling', NOW())
+        RETURNING *
+        `,
+        [patientName, doctorName, sectorId],
       );
 
-      return callResult.rows[0];
+      const call = callResult.rows[0];
+
+      //  coloca na fila de áudio
+      await client.query(
+        `
+        INSERT INTO audio_queue (call_id, status)
+        VALUES ($1, 'pending')
+        `,
+        [call.id],
+      );
+
+      await client.query('COMMIT');
+      return call;
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
     } finally {
       client.release();
     }
   }
+
   async listCalls() {
     const client = await this.pool.connect();
+
     try {
       const result = await client.query(
-        `SELECT ch.id, p.name as patient_name, ch.doctor_name, r.name as room_name, ch.called_at
-       FROM call_history ch
-       JOIN patient p ON ch.patient_id = p.id
-       JOIN room r ON ch.room_id = r.id
-       ORDER BY ch.called_at DESC`,
+        `
+        SELECT
+          c.id,
+          c.patient_name,
+          c.doctor_name,
+          s.name AS sector,
+          c.status,
+          c.created_at
+        FROM call c
+        JOIN sector s ON s.id = c.sector_id
+        ORDER BY c.created_at DESC
+        `,
       );
+
       return result.rows;
     } finally {
       client.release();
