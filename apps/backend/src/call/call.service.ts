@@ -15,32 +15,23 @@ export class CallService {
     });
   }
 
-  async createCall(patientName: string, doctorName: string) {
+  async createCall(patientName: string, doctorName: string, sectorId: number) {
     const client = await this.pool.connect();
 
     try {
       await client.query('BEGIN');
 
-      const sectorName = process.env.SECTOR_NAME;
-      if (!sectorName) {
-        throw new Error('SECTOR_NAME not defined');
-      }
-
-      // 1️⃣ Garante setor
-      const sectorResult = await client.query(
-        `
-      INSERT INTO sector (name)
-      VALUES ($1)
-      ON CONFLICT (name)
-      DO UPDATE SET name = EXCLUDED.name
-      RETURNING id
-      `,
-        [sectorName],
+      // garante que o setor existe
+      const sectorCheck = await client.query(
+        `SELECT id FROM sector WHERE id = $1`,
+        [sectorId],
       );
 
-      const sectorId = sectorResult.rows[0].id;
+      if (sectorCheck.rows.length === 0) {
+        throw new Error('Sector not found');
+      }
 
-      // 2️⃣ Cria chamada
+      // cria chamada
       const callResult = await client.query(
         `
       INSERT INTO call (
@@ -57,17 +48,12 @@ export class CallService {
 
       const callId = callResult.rows[0].id;
 
-      // 3️⃣ Enfileira áudio
-      await client.query(
-        `
-      INSERT INTO audio_queue (call_id)
-      VALUES ($1)
-      `,
-        [callId],
-      );
+      // entra na fila de áudio
+      await client.query(`INSERT INTO audio_queue (call_id) VALUES ($1)`, [
+        callId,
+      ]);
 
       await client.query('COMMIT');
-
       return callResult.rows[0];
     } catch (err) {
       await client.query('ROLLBACK');
@@ -94,6 +80,48 @@ export class CallService {
         JOIN sector s ON s.id = c.sector_id
         ORDER BY c.created_at DESC
         `,
+      );
+
+      return result.rows;
+    } finally {
+      client.release();
+    }
+  }
+
+  async getLastCall(sectorId: number) {
+    const client = await this.pool.connect();
+
+    try {
+      const result = await client.query(
+        `
+      SELECT *
+      FROM call
+      WHERE status = 'calling'
+        AND sector_id = $1
+      ORDER BY started_at DESC
+      LIMIT 1
+      `,
+        [sectorId],
+      );
+
+      return result.rows[0] || null;
+    } finally {
+      client.release();
+    }
+  }
+  async getWaitingCalls(sectorId: number) {
+    const client = await this.pool.connect();
+
+    try {
+      const result = await client.query(
+        `
+      SELECT *
+      FROM call
+      WHERE status = 'waiting'
+        AND sector_id = $1
+      ORDER BY created_at ASC
+      `,
+        [sectorId],
       );
 
       return result.rows;

@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param } from '@nestjs/common';
 import { CallService } from './call.service';
 
 @Controller('call')
@@ -8,15 +8,32 @@ export class CallController {
   // Endpoint para criar uma nova chamada
   @Post()
   async createCall(
-    @Body() body: { patientName: string; doctorName: string; roomName: string },
+    @Body()
+    body: {
+      patientName: string;
+      doctorName: string;
+      sectorId: number;
+    },
   ) {
-    const { patientName, doctorName, roomName } = body;
-    return this.callService.createCall(patientName, doctorName);
+    return this.callService.createCall(
+      body.patientName,
+      body.doctorName,
+      body.sectorId,
+    );
   }
-
   // Endpoint para listar todas as chamadas
   @Get()
   async listCalls() {
     return this.callService.listCalls();
+  }
+  // Endpoint para obter a última chamada de um setor
+  @Get('last/:sectorId')
+  async getLastCall(@Param('sectorId') sectorId: number) {
+    return this.callService.getLastCall(Number(sectorId));
+  }
+  // Endpoint para obter chamadas em espera de um setor
+  @Get('waiting/:sectorId')
+  async getWaitingCalls(@Param('sectorId') sectorId: number) {
+    return this.callService.getWaitingCalls(Number(sectorId));
   }
 }
