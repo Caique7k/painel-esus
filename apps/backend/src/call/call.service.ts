@@ -34,15 +34,18 @@ export class CallService {
       // cria chamada
       const callResult = await client.query(
         `
-      INSERT INTO call (
-        patient_name,
-        doctor_name,
-        sector_id,
-        status
-      )
-      VALUES ($1, $2, $3, 'waiting')
-      RETURNING *
-      `,
+    INSERT INTO call (
+      patient_name,
+      doctor_name,
+      sector_id,
+      status,
+      call_attempts,
+      last_called_at,
+      expires_at
+    )
+    VALUES ($1, $2, $3, 'waiting', 0, NULL, NULL)
+    RETURNING *
+  `,
         [patientName, doctorName, sectorId],
       );
 
