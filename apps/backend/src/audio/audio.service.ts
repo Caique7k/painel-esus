@@ -1,11 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { Pool } from 'pg';
+import { TtsService } from './tts.service';
 
 @Injectable()
 export class AudioService {
   private pool: Pool;
 
-  constructor() {
+  constructor(private readonly ttsService: TtsService) {
     this.pool = new Pool({
       user: process.env.DB_USER,
       host: process.env.DB_HOST,
@@ -38,7 +39,23 @@ export class AudioService {
         await client.query('ROLLBACK');
         return null;
       }
-
+      await client.query(
+        `
+INSERT INTO audio_queue (call_id, status)
+SELECT c.id, 'pending'
+FROM call c
+WHERE c.sector_id = $1
+  AND c.status = 'waiting'
+  AND c.call_attempts < 3
+  AND c.expires_at < NOW()
+  AND NOT EXISTS (
+    SELECT 1 FROM audio_queue aq
+    WHERE aq.call_id = c.id
+      AND aq.status = 'pending'
+  )
+  `,
+        [sectorId],
+      );
       // 2️⃣ Busca próxima chamada válida
       const next = await client.query(
         `
@@ -72,6 +89,7 @@ export class AudioService {
       }
 
       const { audio_id, call_id, call_attempts } = next.rows[0];
+      const attempt = call_attempts + 1;
 
       // 3️⃣ Marca áudio como playing
       await client.query(
@@ -93,12 +111,32 @@ export class AudioService {
       `,
         [call_id],
       );
-
+      const speechText =
+        attempt === 1
+          ? `Paciente ${next.rows[0].patient_name}, dirigir-se ao ${next.rows[0].sector} com ${next.rows[0].doctor_name}.`
+          : `Paciente ${next.rows[0].patient_name}, dirigir-se ao ${next.rows[0].sector} com ${next.rows[0].doctor_name}. Chamada número ${attempt}.`;
+      const audioUrl = await this.ttsService.generateAudio(speechText);
+      await client.query(
+        `
+      UPDATE audio_queue
+      SET
+        audio_path = $1,
+        audio_text = $2
+      WHERE id = $3
+  `,
+        [audioUrl, speechText, audio_id],
+      );
       await client.query('COMMIT');
 
       return {
-        ...next.rows[0],
-        attempt_number: call_attempts + 1, // isso vai pro painel / TTS
+        audioId: audio_id,
+        callId: call_id,
+        patientName: next.rows[0].patient_name,
+        doctorName: next.rows[0].doctor_name,
+        sector: next.rows[0].sector,
+        attempt,
+        text: speechText,
+        audioUrl,
       };
     } catch (err) {
       await client.query('ROLLBACK');
@@ -124,11 +162,12 @@ export class AudioService {
       await client.query(
         `
       UPDATE call
-      SET status = 'finished',
-          finished_at = NOW()
-      WHERE id = (
-        SELECT call_id FROM audio_queue WHERE id = $1
-      )
+SET status = 'waiting'
+WHERE id = (
+  SELECT call_id FROM audio_queue WHERE id = $1
+)
+AND call_attempts >= 3;
+      
       `,
         [audioId],
       );
