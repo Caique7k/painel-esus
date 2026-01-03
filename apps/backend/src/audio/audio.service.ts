@@ -22,7 +22,7 @@ export class AudioService {
     try {
       await client.query('BEGIN');
 
-      // 1️⃣ Verifica se já tem áudio tocando nesse setor
+      // 1️⃣ Verifica se já existe áudio tocando no setor
       const playing = await client.query(
         `
       SELECT 1
@@ -39,101 +39,91 @@ export class AudioService {
         await client.query('ROLLBACK');
         return null;
       }
-      await client.query(
-        `
-INSERT INTO audio_queue (call_id, status)
-SELECT c.id, 'pending'
-FROM call c
-WHERE c.sector_id = $1
-  AND c.status = 'waiting'
-  AND c.call_attempts < 3
-  AND c.expires_at < NOW()
-  AND NOT EXISTS (
-    SELECT 1 FROM audio_queue aq
-    WHERE aq.call_id = c.id
-      AND aq.status = 'pending'
-  )
-  `,
-        [sectorId],
-      );
-      // 2️⃣ Busca próxima chamada válida
-      const next = await client.query(
+
+      // 2️⃣ Busca próxima chamada elegível
+      const result = await client.query(
         `
       SELECT
-        aq.id AS audio_id,
-        aq.call_id,
+        c.id AS call_id,
         c.patient_name,
         c.doctor_name,
         c.call_attempts,
+        c.expires_at,
         s.name AS sector
-      FROM audio_queue aq
-      JOIN call c ON c.id = aq.call_id
+      FROM call c
       JOIN sector s ON s.id = c.sector_id
-      WHERE aq.status = 'pending'
-        AND c.sector_id = $1
+      WHERE c.sector_id = $1
+        AND c.status = 'waiting'
         AND c.call_attempts < 3
         AND (
           c.expires_at IS NULL
-          OR c.expires_at < NOW()
+          OR c.expires_at > NOW()
         )
-      ORDER BY aq.created_at
+      ORDER BY c.created_at
       FOR UPDATE SKIP LOCKED
       LIMIT 1
       `,
         [sectorId],
       );
 
-      if (next.rows.length === 0) {
+      if (result.rows.length === 0) {
         await client.query('ROLLBACK');
         return null;
       }
 
-      const { audio_id, call_id, call_attempts } = next.rows[0];
-      const attempt = call_attempts + 1;
+      const call = result.rows[0];
+      const attempt = call.call_attempts + 1;
 
-      // 3️⃣ Marca áudio como playing
-      await client.query(
-        `UPDATE audio_queue SET status = 'playing' WHERE id = $1`,
-        [audio_id],
-      );
+      // 3️⃣ Texto do áudio
+      const speechText =
+        attempt === 1
+          ? `Paciente ${call.patient_name}, dirigir-se ao ${call.sector} com ${call.doctor_name}.`
+          : `Paciente ${call.patient_name}, dirigir-se ao ${call.sector} com ${call.doctor_name}. Chamada número ${attempt}.`;
 
-      // 4️⃣ Atualiza a chamada
+      // 4️⃣ Gera áudio
+      const audioUrl = await this.ttsService.generateAudio(speechText);
+
+      // 5️⃣ Atualiza chamada (define expires_at só na primeira vez)
       await client.query(
         `
       UPDATE call
       SET
         status = 'calling',
-        call_attempts = call_attempts + 1,
+        call_attempts = $1,
         last_called_at = NOW(),
-        expires_at = NOW() + INTERVAL '5 minutes',
-        started_at = NOW()
-      WHERE id = $1
+        started_at = COALESCE(started_at, NOW()),
+        expires_at = CASE
+          WHEN expires_at IS NULL THEN NOW() + INTERVAL '5 minutes'
+          ELSE expires_at
+        END
+      WHERE id = $2
       `,
-        [call_id],
+        [attempt, call.call_id],
       );
-      const speechText =
-        attempt === 1
-          ? `Paciente ${next.rows[0].patient_name}, dirigir-se ao ${next.rows[0].sector} com ${next.rows[0].doctor_name}.`
-          : `Paciente ${next.rows[0].patient_name}, dirigir-se ao ${next.rows[0].sector} com ${next.rows[0].doctor_name}. Chamada número ${attempt}.`;
-      const audioUrl = await this.ttsService.generateAudio(speechText);
-      await client.query(
+
+      // 6️⃣ Cria áudio como playing
+      const audioInsert = await client.query(
         `
-      UPDATE audio_queue
-      SET
-        audio_path = $1,
-        audio_text = $2
-      WHERE id = $3
-  `,
-        [audioUrl, speechText, audio_id],
+      INSERT INTO audio_queue (
+        call_id,
+        status,
+        audio_text,
+        audio_path
+      )
+      VALUES ($1, 'playing', $2, $3)
+      RETURNING id
+      `,
+        [call.call_id, speechText, audioUrl],
       );
+
       await client.query('COMMIT');
 
       return {
-        audioId: audio_id,
-        callId: call_id,
-        patientName: next.rows[0].patient_name,
-        doctorName: next.rows[0].doctor_name,
-        sector: next.rows[0].sector,
+        audioId: audioInsert.rows[0].id,
+        callId: call.call_id,
+        patientName: call.patient_name,
+        doctorName: call.doctor_name,
+        sector: call.sector,
         attempt,
         text: speechText,
         audioUrl,
@@ -154,20 +144,30 @@ WHERE c.sector_id = $1
     try {
       await client.query('BEGIN');
 
+      // 1️⃣ Finaliza o áudio
       await client.query(
-        `UPDATE audio_queue SET status = 'done' WHERE id = $1`,
+        `
+      UPDATE audio_queue
+      SET status = 'done'
+      WHERE id = $1
+      `,
         [audioId],
       );
 
+      // 2️⃣ Atualiza status da chamada
       await client.query(
         `
       UPDATE call
-SET status = 'waiting'
-WHERE id = (
-  SELECT call_id FROM audio_queue WHERE id = $1
-)
-AND call_attempts >= 3;
-      
+      SET status = CASE
+        WHEN call_attempts >= 3 OR expires_at < NOW()
+          THEN 'no_show'
+        ELSE 'waiting'
+      END
+      WHERE id = (
+        SELECT call_id
+        FROM audio_queue
+        WHERE id = $1
+      )
       `,
         [audioId],
       );
