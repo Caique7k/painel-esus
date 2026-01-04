@@ -146,14 +146,41 @@ export default function Home() {
               Sala 01
             </p>
           </div>
-
         </div>
-
       </div>
 
       {/* ================= FOOTER ================= */}
-      <div className="absolute bottom-0 w-full h-[25%] bg-blue-200/90 text-blue-900 flex items-center justify-center z-20 backdrop-blur-md shadow-[0_-10px_40px_rgba(0,0,0,0.1)]">
-        <span className="text-2xl font-semibold">Histórico de chamadas ou Mensagens virão aqui</span>
+      <div className="absolute bottom-0 w-full h-[30%] bg-blue-200/90 text-blue-900 z-20 backdrop-blur-md shadow-[0_-10px_40px_rgba(0,0,0,0.1)] flex flex-col">
+
+        {/* TÍTULO */}
+        <div className="px-4 py-2 bg-blue-100/80 border-b border-blue-300">
+          <span className="text-lg md:text-2xl font-semibold uppercase tracking-wide text-blue-900">
+            Últimas chamadas
+          </span>
+        </div>
+
+        {/* ÁREA DAS CHAMADAS */}
+        <div className="flex-1 px-2 pb-10">
+          {/* Grid restaurado para manter colunas horizontais e items-center para centralizar no vácuo do F11 */}
+          <div className="grid grid-cols-[2fr_auto_2fr_auto_2fr] h-full items-center">
+
+            {/* COLUNA 1 */}
+            <div className="flex flex-col gap-1 md:gap-2 pl-2">
+              <p className="text-[2.5vh] lg:text-[3vh] font-medium leading-tight">
+                00:00 — Paciente
+              </p>
+              <p className="text-[2.5vh] lg:text-[3vh] font-medium leading-tight">
+                00:00 — Paciente
+              </p>
+              <p className="text-[2.5vh] lg:text-[3vh] font-medium leading-tight">
+                00:00 — Paciente
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* LINHA / LETREIRO */}
+        <div className="absolute bottom-0 left-0 w-full h-10 bg-blue-500" />
       </div>
     </div>
   );
