@@ -14,6 +14,20 @@ export class CallService {
       port: Number(process.env.DB_PORT),
     });
   }
+  async retryCall(callId: number) {
+    await this.pool.query(
+      `
+      UPDATE call
+      SET status = 'waiting'
+      WHERE id = $1
+        AND status = 'called'
+        AND expires_at > NOW()
+      `,
+      [callId],
+    );
+
+    return { success: true };
+  }
 
   async createCall(patientName: string, doctorName: string, sectorId: number) {
     const client = await this.pool.connect();
@@ -50,11 +64,6 @@ export class CallService {
       );
 
       const callId = callResult.rows[0].id;
-
-      // entra na fila de áudio
-      await client.query(`INSERT INTO audio_queue (call_id) VALUES ($1)`, [
-        callId,
-      ]);
 
       await client.query('COMMIT');
       return callResult.rows[0];
