@@ -29,6 +29,9 @@ export default function Home() {
   // Conexão SSE
   const [connected, setConnected] = useState(false);
 
+  // Estado de reprodução de áudio
+  const [tocando, setTocando] = useState(false);
+
   // ===============================
   // EFFECT - Atualiza hora e data
   // ===============================
@@ -74,9 +77,10 @@ export default function Home() {
       console.log("🟢 Conectado ao SSE");
     };
 
-    eventSource.onmessage = (event) => {
+    eventSource.onmessage = async (event) => {
       const data = JSON.parse(event.data);
 
+      // Atualiza tela
       setCurrentCall({
         callId: data.callId,
         patientName: data.patientName,
@@ -85,11 +89,27 @@ export default function Home() {
         attempt: data.attempt,
       });
 
-      // Atualiza histórico (máx 5)
+      // Atualiza histórico
       setHistory((prev) => {
         const updated = [data, ...prev];
         return updated.slice(0, 5);
       });
+
+      // 🔒 evita sobreposição
+      if (tocando) return;
+
+      setTocando(true);
+
+      // 🔔 Beep
+      tocarBeep();
+
+      // ⏱️ pequeno delay
+      await new Promise((r) => setTimeout(r, 800));
+
+      // 🔊 Voz
+      await tocarAudio(`http://localhost:3001${data.audioUrl}`);
+
+      setTocando(false);
     };
 
     eventSource.onerror = () => {
@@ -101,6 +121,39 @@ export default function Home() {
       eventSource.close();
     };
   }, []);
+
+  // Função para tocar beep
+  function tocarBeep() {
+    const ctx = new AudioContext();
+
+    const oscillator = ctx.createOscillator();
+    const gainNode = ctx.createGain();
+
+    oscillator.type = "triangle";
+    oscillator.frequency.setValueAtTime(800, ctx.currentTime);
+
+    gainNode.gain.setValueAtTime(0, ctx.currentTime);
+    gainNode.gain.linearRampToValueAtTime(0.3, ctx.currentTime + 0.02);
+    gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.8);
+
+    oscillator.connect(gainNode);
+    gainNode.connect(ctx.destination);
+
+    oscillator.start();
+    oscillator.stop(ctx.currentTime + 0.8);
+  }
+
+  //Funçao para tocar áudio do paciente chamado
+  function tocarAudio(audioUrl: string) {
+    return new Promise<void>((resolve) => {
+      const audio = new Audio(audioUrl);
+
+      audio.onended = () => resolve();
+      audio.onerror = () => resolve();
+
+      audio.play();
+    });
+  }
 
   return (
     // ===============================
