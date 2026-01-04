@@ -336,7 +336,98 @@ export default function Home() {
         </div>
 
         {/* LINHA / LETREIRO */}
-        <div className="absolute bottom-0 left-0 w-full h-10 bg-blue-500" />
+        <div className="absolute bottom-0 left-0 w-full h-10 bg-blue-500 overflow-hidden flex items-center">
+          <div className="flex whitespace-nowrap animate-marquee text-white font-semibold text-base md:text-lg">
+            <div className="flex gap-12 px-6">
+              <span className="flex items-center gap-3">
+                <span className="text-xl md:text-2xl leading-none">•</span>
+                Mantenha o silêncio nas áreas de atendimento
+                <span className="text-xl md:text-2xl leading-none">•</span>
+              </span>
+
+              <span className="flex items-center gap-3">
+                <span className="text-xl md:text-2xl leading-none">•</span>
+                Utilize máscara se estiver com sintomas gripais
+                <span className="text-xl md:text-2xl leading-none">•</span>
+              </span>
+
+              <span className="flex items-center gap-3">
+                <span className="text-xl md:text-2xl leading-none">•</span>
+                Respeite a ordem de chamada dos pacientes
+                <span className="text-xl md:text-2xl leading-none">•</span>
+              </span>
+
+              <span className="flex items-center gap-3">
+                <span className="text-xl md:text-2xl leading-none">•</span>
+                Em caso de dúvidas, procure a recepção
+                <span className="text-xl md:text-2xl leading-none">•</span>
+              </span>
+
+              <span className="flex items-center gap-3">
+                <span className="text-xl md:text-2xl leading-none">•</span>
+                Acompanhe apenas se autorizado pela equipe
+                <span className="text-xl md:text-2xl leading-none">•</span>
+              </span>
+
+              <span className="flex items-center gap-3">
+                <span className="text-xl md:text-2xl leading-none">•</span>
+                Higienize as mãos com frequência
+                <span className="text-xl md:text-2xl leading-none">•</span>
+              </span>
+
+              <span className="flex items-center gap-3">
+                <span className="text-xl md:text-2xl leading-none">•</span>
+                Obrigado por colaborar com um ambiente seguro
+                <span className="text-xl md:text-2xl leading-none">•</span>
+              </span>
+            </div>
+
+            {/* DUPLICADO */}
+            <div className="flex gap-12 px-6">
+              <span className="flex items-center gap-3">
+                <span className="text-xl md:text-2xl leading-none">•</span>
+                Mantenha o silêncio nas áreas de atendimento
+                <span className="text-xl md:text-2xl leading-none">•</span>
+              </span>
+
+              <span className="flex items-center gap-3">
+                <span className="text-xl md:text-2xl leading-none">•</span>
+                Utilize máscara se estiver com sintomas gripais
+                <span className="text-xl md:text-2xl leading-none">•</span>
+              </span>
+
+              <span className="flex items-center gap-3">
+                <span className="text-xl md:text-2xl leading-none">•</span>
+                Respeite a ordem de chamada dos pacientes
+                <span className="text-xl md:text-2xl leading-none">•</span>
+              </span>
+
+              <span className="flex items-center gap-3">
+                <span className="text-xl md:text-2xl leading-none">•</span>
+                Em caso de dúvidas, procure a recepção
+                <span className="text-xl md:text-2xl leading-none">•</span>
+              </span>
+
+              <span className="flex items-center gap-3">
+                <span className="text-xl md:text-2xl leading-none">•</span>
+                Acompanhe apenas se autorizado pela equipe
+                <span className="text-xl md:text-2xl leading-none">•</span>
+              </span>
+
+              <span className="flex items-center gap-3">
+                <span className="text-xl md:text-2xl leading-none">•</span>
+                Higienize as mãos com frequência
+                <span className="text-xl md:text-2xl leading-none">•</span>
+              </span>
+
+              <span className="flex items-center gap-3">
+                <span className="text-xl md:text-2xl leading-none">•</span>
+                Obrigado por colaborar com um ambiente seguro
+                <span className="text-xl md:text-2xl leading-none">•</span>
+              </span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
