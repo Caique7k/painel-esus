@@ -14,6 +14,33 @@ export class CallService {
       port: Number(process.env.DB_PORT),
     });
   }
+  async retryCall(callId: number) {
+    const result = await this.pool.query(
+      `
+    UPDATE call
+    SET status = 'waiting'
+    WHERE id = $1
+      AND status = 'called'
+      AND expires_at > NOW()
+      AND call_attempts < 3
+    RETURNING id, call_attempts
+    `,
+      [callId],
+    );
+
+    if (result.rowCount === 0) {
+      return {
+        success: false,
+        message: 'Chamada não pode ser refeita',
+      };
+    }
+
+    return {
+      success: true,
+      callId,
+      nextAttempt: result.rows[0].call_attempts + 1,
+    };
+  }
 
   async createCall(patientName: string, doctorName: string, sectorId: number) {
     const client = await this.pool.connect();
@@ -50,11 +77,6 @@ export class CallService {
       );
 
       const callId = callResult.rows[0].id;
-
-      // entra na fila de áudio
-      await client.query(`INSERT INTO audio_queue (call_id) VALUES ($1)`, [
-        callId,
-      ]);
 
       await client.query('COMMIT');
       return callResult.rows[0];

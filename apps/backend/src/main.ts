@@ -9,6 +9,7 @@ import {
 } from '@nestjs/platform-fastify';
 
 import fastifyStatic from '@fastify/static';
+import fastifyCors from '@fastify/cors';
 import * as path from 'path';
 
 async function bootstrap() {
@@ -17,8 +18,9 @@ async function bootstrap() {
     new FastifyAdapter(),
   );
 
-  app.enableCors({
-    origin: true,
+  // 🔑 CORS DO FASTIFY (ESSENCIAL PARA SSE)
+  await app.register(fastifyCors, {
+    origin: 'http://localhost:3000',
     credentials: true,
   });
 
