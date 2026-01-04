@@ -12,14 +12,17 @@ export class AudioController {
   }
 
   @Get('stream/area/:areaId')
-  async stream(@Param('areaId') areaId: number, @Res() reply: FastifyReply) {
-    reply.raw.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
-    reply.raw.setHeader('Cache-Control', 'no-cache');
-    reply.raw.setHeader('Connection', 'keep-alive');
+  stream(@Param('areaId') areaId: number, @Res() res: any) {
+    res.raw.writeHead(200, {
+      'Content-Type': 'text/event-stream; charset=utf-8',
+      'Cache-Control': 'no-cache, no-transform',
+      Connection: 'keep-alive',
+      'Access-Control-Allow-Origin': 'http://localhost:3000',
+    });
 
-    reply.raw.write(': connected\n\n');
+    res.raw.write(': connected\n\n');
 
-    this.audioService.registerClient(Number(areaId), reply.raw);
+    this.audioService.registerClient(Number(areaId), res.raw);
   }
 
   @Post('finish')

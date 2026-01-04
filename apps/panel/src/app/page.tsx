@@ -1,63 +1,114 @@
-"use client"
+"use client";
 
-import Image from "next/image"
-import { useEffect, useState } from "react"
+import Image from "next/image";
+import { useEffect, useState } from "react";
 
 export default function Home() {
-
   // ===============================
   // STATES
   // ===============================
 
   // Horário atual (HH:MM)
-  const [time, setTime] = useState("")
+  const [time, setTime] = useState("");
 
   // Data atual (DD/MM/AAAA)
-  const [date, setDate] = useState("")
+  const [date, setDate] = useState("");
+
+  //Paciente atualmente sendo chamado
+  const [currentCall, setCurrentCall] = useState<null | {
+    callId: number;
+    patientName: string;
+    doctorName: string;
+    sector: string;
+    attempt: number;
+  }>(null);
+
+  // Histórico visual (últimos 5)
+  const [history, setHistory] = useState<(typeof currentCall)[]>([]);
+
+  // Conexão SSE
+  const [connected, setConnected] = useState(false);
 
   // ===============================
   // EFFECT - Atualiza hora e data
   // ===============================
 
   useEffect(() => {
-
     // Função responsável por atualizar hora e data
     const updateDateTime = () => {
-      const now = new Date()
+      const now = new Date();
 
       // Hora
-      const hours = now.getHours().toString().padStart(2, "0")
-      const minutes = now.getMinutes().toString().padStart(2, "0")
+      const hours = now.getHours().toString().padStart(2, "0");
+      const minutes = now.getMinutes().toString().padStart(2, "0");
 
       // Data
-      const day = now.getDate().toString().padStart(2, "0")
-      const month = (now.getMonth() + 1).toString().padStart(2, "0")
-      const year = now.getFullYear()
+      const day = now.getDate().toString().padStart(2, "0");
+      const month = (now.getMonth() + 1).toString().padStart(2, "0");
+      const year = now.getFullYear();
 
-      setTime(`${hours}:${minutes}`)
-      setDate(`${day}/${month}/${year}`)
-    }
+      setTime(`${hours}:${minutes}`);
+      setDate(`${day}/${month}/${year}`);
+    };
 
     // Atualiza imediatamente ao carregar
     updateDateTime();
 
     // Atualiza a cada 1 segundo
-    const interval = setInterval(updateDateTime, 1000)
+    const interval = setInterval(updateDateTime, 1000);
 
     // Limpa o intervalo ao desmontar o componente
-    return () => clearInterval(interval)
+    return () => clearInterval(interval);
+  }, []);
 
-  }, [])
+  //useEffect que chama a API de SSE para receber chamadas de áudio
+  useEffect(() => {
+    const areaId = 1;
+
+    const eventSource = new EventSource(
+      `http://localhost:3001/audio/stream/area/${areaId}`
+    );
+
+    eventSource.onopen = () => {
+      setConnected(true);
+      console.log("🟢 Conectado ao SSE");
+    };
+
+    eventSource.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+
+      setCurrentCall({
+        callId: data.callId,
+        patientName: data.patientName,
+        doctorName: data.doctorName,
+        sector: data.sector,
+        attempt: data.attempt,
+      });
+
+      // Atualiza histórico (máx 5)
+      setHistory((prev) => {
+        const updated = [data, ...prev];
+        return updated.slice(0, 5);
+      });
+    };
+
+    eventSource.onerror = () => {
+      console.error("🔴 Erro SSE");
+      eventSource.close();
+    };
+
+    return () => {
+      eventSource.close();
+    };
+  }, []);
 
   return (
     // ===============================
     // LAYOUT PRINCIPAL
     // ===============================
     <div className="h-screen relative overflow-hidden bg-slate-900">
-
       {/* ================= HEADER ================= */}
       <div className="h-[20%] min-h-30 bg-blue-900 text-white z-10 relative flex items-center px-8 gap-6 shadow-xl">
-
         {/* LOGO */}
         <div className="h-[70%] aspect-square relative">
           <Image
@@ -75,7 +126,6 @@ export default function Home() {
 
         {/* RELÓGIO */}
         <div className="ml-auto bg-blue-950/80 px-5 py-3 rounded-lg text-center border border-blue-800/50">
-
           {/* HORA */}
           <div className="text-lg sm:text-xl md:text-2xl font-semibold leading-none font-mono">
             {time}
@@ -90,28 +140,29 @@ export default function Home() {
 
       {/* ================= MAIN ================= */}
       <div className="relative h-[55%] overflow-hidden">
-
         {/* BACKGROUND LAYERS */}
         <div className="absolute inset-0 z-0 pointer-events-none">
-
           {/* AZUL BASE (50%) */}
-          <div className="absolute inset-0 bg-blue-600"
+          <div
+            className="absolute inset-0 bg-blue-600"
             style={{
-              clipPath: "polygon(100% 100%, 100% 0%, 35% 0%, 50% 100%)"
+              clipPath: "polygon(100% 100%, 100% 0%, 35% 0%, 50% 100%)",
             }}
           />
 
           {/* AZUL MÉDIO (25%) */}
-          <div className="absolute inset-0 bg-blue-700"
-           style={{
-            clipPath: "polygon(50.1% 100%, 35.1% 0%, 15% 0%, 30% 100%)"
-           }}
+          <div
+            className="absolute inset-0 bg-blue-700"
+            style={{
+              clipPath: "polygon(50.1% 100%, 35.1% 0%, 15% 0%, 30% 100%)",
+            }}
           />
 
           {/* AZUL ESCURO (25%) */}
-          <div className="absolute inset-0 bg-blue-800"
+          <div
+            className="absolute inset-0 bg-blue-800"
             style={{
-              clipPath: "polygon(30.1% 100%, 15.1% 0%, 0% 0%, 0% 100%)"
+              clipPath: "polygon(30.1% 100%, 15.1% 0%, 0% 0%, 0% 100%)",
             }}
           />
         </div>
@@ -123,37 +174,36 @@ export default function Home() {
               Médico(a)
             </p>
             <p className="text-white text-sm sm:text-base md:text-xl font-semibold truncate">
-              Dr. Nome do Profissional
+              {currentCall?.doctorName ?? "—"}
             </p>
           </div>
         </div>
 
         {/* CONTEÚDO CENTRAL */}
         <div className="relative z-10 w-full h-full flex flex-col items-center justify-center p-8 text-center">
-
           {/* TÍTULO - PACIENTE */}
           <p className="text-blue-200 text-xl md:text-2xl uppercase tracking-[0.2em] mb-2 font-medium">
             Paciente
           </p>
 
           <h1 className="text-3xl md:text-5xl lg:text-6xl font-black text-white uppercase drop-shadow-lg tracking-wide animate-pulse-once">
-            Nome do Paciente
+            {currentCall?.patientName ?? "—"}
           </h1>
 
           {/* SALA */}
           <div className="mt-2 md:mt-4 px-8 py-2 bg-blue-950/30 backdrop-blur-sm rounded-full border border-blue-400/20">
             <p className="text-xl md:text-3xl font-medium text-blue-100">
-              Sala 01
+              {currentCall?.sector ?? "—"}
             </p>
           </div>
-
         </div>
-
       </div>
 
       {/* ================= FOOTER ================= */}
       <div className="absolute bottom-0 w-full h-[25%] bg-blue-200/90 text-blue-900 flex items-center justify-center z-20 backdrop-blur-md shadow-[0_-10px_40px_rgba(0,0,0,0.1)]">
-        <span className="text-2xl font-semibold">Histórico de chamadas ou Mensagens virão aqui</span>
+        <span className="text-2xl font-semibold">
+          Histórico de chamadas ou Mensagens virão aqui
+        </span>
       </div>
     </div>
   );
