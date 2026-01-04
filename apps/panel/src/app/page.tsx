@@ -175,6 +175,27 @@ export default function Home() {
     }
   }
 
+  //Função para chamar o paciente novamente
+  async function retryCall(callId: number) {
+    try {
+      const res = await fetch("http://localhost:3001/call/retry", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ callId }),
+      });
+
+      const data = await res.json();
+
+      if (!data.success) {
+        alert(data.message || "Não foi possível chamar novamente");
+      }
+    } catch (err) {
+      console.error("Erro ao retry", err);
+    }
+  }
+
   return (
     // ===============================
     // LAYOUT PRINCIPAL
@@ -259,10 +280,22 @@ export default function Home() {
             Paciente
           </p>
 
-          <h1 className="text-3xl md:text-5xl lg:text-6xl font-black text-white uppercase drop-shadow-lg tracking-wide animate-pulse-once">
+          <h1 className="text-3xl md:text-5xl lg:text-6xl font-black text-white uppercase drop-shadow-lg tracking-wide animate-pulse-once mb-4">
             {currentCall?.patientName ?? "—"}
           </h1>
-
+          {currentCall && currentCall.attempt > 1 && (
+            <div
+              className={`mb-3 px-4 py-1 rounded-full text-sm font-semibold
+      ${
+        currentCall.attempt === 2
+          ? "bg-yellow-500/90 text-yellow-950"
+          : "bg-red-600/90 text-white"
+      }
+    `}
+            >
+              {currentCall.attempt === 2 ? "Chamada Nº 2 " : "Chamada Nº 3"}
+            </div>
+          )}
           {/* SALA */}
           <div className="mt-2 md:mt-4 px-8 py-2 bg-blue-950/30 backdrop-blur-sm rounded-full border border-blue-400/20">
             <p className="text-xl md:text-3xl font-medium text-blue-100">

@@ -15,18 +15,31 @@ export class CallService {
     });
   }
   async retryCall(callId: number) {
-    await this.pool.query(
+    const result = await this.pool.query(
       `
-      UPDATE call
-      SET status = 'waiting'
-      WHERE id = $1
-        AND status = 'called'
-        AND expires_at > NOW()
-      `,
+    UPDATE call
+    SET status = 'waiting'
+    WHERE id = $1
+      AND status = 'called'
+      AND expires_at > NOW()
+      AND call_attempts < 3
+    RETURNING id, call_attempts
+    `,
       [callId],
     );
 
-    return { success: true };
+    if (result.rowCount === 0) {
+      return {
+        success: false,
+        message: 'Chamada não pode ser refeita',
+      };
+    }
+
+    return {
+      success: true,
+      callId,
+      nextAttempt: result.rows[0].call_attempts + 1,
+    };
   }
 
   async createCall(patientName: string, doctorName: string, sectorId: number) {
