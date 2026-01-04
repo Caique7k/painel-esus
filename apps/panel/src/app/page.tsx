@@ -17,6 +17,7 @@ export default function Home() {
   //Paciente atualmente sendo chamado
   const [currentCall, setCurrentCall] = useState<null | {
     callId: number;
+    audioId: number;
     patientName: string;
     doctorName: string;
     sector: string;
@@ -83,6 +84,7 @@ export default function Home() {
       // Atualiza tela
       setCurrentCall({
         callId: data.callId,
+        audioId: data.audioId,
         patientName: data.patientName,
         doctorName: data.doctorName,
         sector: data.sector,
@@ -95,19 +97,22 @@ export default function Home() {
         return updated.slice(0, 5);
       });
 
-      // 🔒 evita sobreposição
+      //  evita sobreposição
       if (tocando) return;
 
       setTocando(true);
 
-      // 🔔 Beep
+      //  Beep
       tocarBeep();
 
-      // ⏱️ pequeno delay
+      //  pequeno delay
       await new Promise((r) => setTimeout(r, 800));
 
-      // 🔊 Voz
+      // Voz
       await tocarAudio(`http://localhost:3001${data.audioUrl}`);
+
+      // Finaliza chamada na API
+      await finalizarAudio(data.audioId);
 
       setTocando(false);
     };
@@ -153,6 +158,21 @@ export default function Home() {
 
       audio.play();
     });
+  }
+
+  //Função para finalizar a chamada atual
+  async function finalizarAudio(audioId: number) {
+    try {
+      await fetch("http://localhost:3001/audio/finish", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ audioId }), // 👈 correto
+      });
+    } catch (err) {
+      console.error("Erro ao finalizar áudio", err);
+    }
   }
 
   return (
