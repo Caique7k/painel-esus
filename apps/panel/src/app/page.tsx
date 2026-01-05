@@ -353,18 +353,50 @@ export default function Home() {
         {/* ÁREA DAS CHAMADAS */}
         <div className="flex-1 px-2 pb-10 2xl:pb-13">
           {/* Grid restaurado para manter colunas horizontais e items-center para centralizar no vácuo do F11 */}
-          <div className="grid grid-cols-[2fr_auto_2fr_auto_2fr] h-full items-center">
+          <div className="grid grid-cols-[1fr_16fr_1.8fr] 2xl:grid-cols-[1fr_10fr_1.7fr] h-full items-center">
 
-            {/* COLUNA 1 */}
+            {/* COLUNA 1 - HORÁRIOS*/}
             <div className="flex flex-col gap-1 md:gap-2 2xl:gap-3 pl-2">
               <p className="text-[2.5vh] lg:text-[3vh] 2xl:text-[3.5vh] font-medium leading-tight">
-                00:00 — Paciente
+                {recentCalls[0]?.time ?? "\u00A0"}
               </p>
+
               <p className="text-[2.5vh] lg:text-[3vh] 2xl:text-[3.5vh] font-medium leading-tight">
-                00:00 — Paciente
+                {recentCalls[1]?.time ?? "\u00A0"}
               </p>
+
               <p className="text-[2.5vh] lg:text-[3vh] 2xl:text-[3.5vh] font-medium leading-tight">
-                00:00 — Paciente
+                {recentCalls[2]?.time ?? "\u00A0"}
+              </p>
+            </div>
+
+            {/* COLUNA 2 - PACIENTES */}
+            <div className="flex flex-col gap-1 md:gap-2 2xl:gap-3 pl-2">
+              <p className="text-[2.5vh] lg:text-[3vh] 2xl:text-[3.5vh] font-medium leading-tight">
+                {recentCalls[0]?.patientName ?? "\u00A0"}
+              </p>
+
+              <p className="text-[2.5vh] lg:text-[3vh] 2xl:text-[3.5vh] font-medium leading-tight">
+                {recentCalls[1]?.patientName ?? "\u00A0"}
+              </p>
+
+              <p className="text-[2.5vh] lg:text-[3vh] 2xl:text-[3.5vh] font-medium leading-tight">
+                {recentCalls[2]?.patientName ?? "\u00A0"}
+              </p>
+            </div>
+
+            {/* COLUNA 3 - SALAS */}
+            <div className="flex flex-col gap-1 md:gap-2 2xl:gap-3 pl-2">
+              <p className="text-[2.5vh] lg:text-[3vh] 2xl:text-[3.5vh] font-medium leading-tight">
+                {recentCalls[0]?.sector ?? "\u00A0"}
+              </p>
+
+              <p className="text-[2.5vh] lg:text-[3vh] 2xl:text-[3.5vh] font-medium leading-tight">
+                {recentCalls[1]?.sector ?? "\u00A0"}
+              </p>
+
+              <p className="text-[2.5vh] lg:text-[3vh] 2xl:text-[3.5vh] font-medium leading-tight">
+                {recentCalls[2]?.sector ?? "\u00A0"}
               </p>
             </div>
           </div>
