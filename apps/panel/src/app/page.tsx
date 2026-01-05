@@ -33,6 +33,16 @@ export default function Home() {
   // Estado de reprodução de áudio
   const [tocando, setTocando] = useState(false);
 
+  type RecentCall = {
+    callId: number;
+    patientName: string;
+    sector: string;
+    time: string; // HH:MM
+  };
+
+  // Historico de chamadas (últimos 3)
+  const [recentCalls, setRecentCalls] = useState<RecentCall[]>([]);
+
   // ===============================
   // EFFECT - Atualiza hora e data
   // ===============================
@@ -81,6 +91,12 @@ export default function Home() {
     eventSource.onmessage = async (event) => {
       const data = JSON.parse(event.data);
 
+      const now = new Date();
+      const timeLabel = now.toLocaleTimeString("pt-BR", {
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+
       // Atualiza tela
       setCurrentCall({
         callId: data.callId,
@@ -95,6 +111,26 @@ export default function Home() {
       setHistory((prev) => {
         const updated = [data, ...prev];
         return updated.slice(0, 5);
+      });
+      // Atualiza rodapé (máx 3, sem repetir o atual)
+      setRecentCalls((prev) => {
+        const next = [
+          {
+            callId: data.callId,
+            patientName: data.patientName,
+            sector: data.sector,
+            time: timeLabel,
+          },
+          ...prev,
+        ];
+
+        // remove duplicados pelo callId
+        const unique = next.filter(
+          (item, index, self) =>
+            index === self.findIndex((i) => i.callId === item.callId)
+        );
+
+        return unique.slice(0, 3);
       });
 
       //  evita sobreposição
@@ -307,7 +343,6 @@ export default function Home() {
 
       {/* ================= FOOTER ================= */}
       <div className="absolute bottom-0 w-full h-[30%] bg-blue-200/90 text-blue-900 z-20 backdrop-blur-md shadow-[0_-10px_40px_rgba(0,0,0,0.1)] flex flex-col">
-
         {/* TÍTULO */}
         <div className="px-4 py-2 bg-blue-100/80 border-b border-blue-300">
           <span className="text-lg md:text-2xl font-semibold uppercase tracking-wide text-blue-900">
@@ -316,22 +351,35 @@ export default function Home() {
         </div>
 
         {/* ÁREA DAS CHAMADAS */}
-        <div className="flex-1 px-2 pb-10">
-          {/* Grid restaurado para manter colunas horizontais e items-center para centralizar no vácuo do F11 */}
-          <div className="grid grid-cols-[2fr_auto_2fr_auto_2fr] h-full items-center">
+        <div className="flex-1 px-8 py-4">
+          <div className="h-full flex flex-col justify-center divide-y divide-blue-300/40">
+            {recentCalls.length === 0 && (
+              <div className="text-center text-2xl opacity-50 py-6">
+                Nenhuma chamada anterior
+              </div>
+            )}
 
-            {/* COLUNA 1 */}
-            <div className="flex flex-col gap-1 md:gap-2 pl-2">
-              <p className="text-[2.5vh] lg:text-[3vh] font-medium leading-tight">
-                00:00 — Paciente
-              </p>
-              <p className="text-[2.5vh] lg:text-[3vh] font-medium leading-tight">
-                00:00 — Paciente
-              </p>
-              <p className="text-[2.5vh] lg:text-[3vh] font-medium leading-tight">
-                00:00 — Paciente
-              </p>
-            </div>
+            {recentCalls.map((call) => (
+              <div
+                key={call.callId}
+                className="flex items-center py-3 first:pt-0 last:pb-0"
+              >
+                {/* HORA */}
+                <div className="w-24 text-2xl md:text-3xl font-mono font-semibold text-blue-800">
+                  {call.time}
+                </div>
+
+                {/* NOME */}
+                <div className="flex-1 text-2xl md:text-3xl font-semibold text-blue-900 truncate">
+                  {call.patientName}
+                </div>
+
+                {/* SETOR */}
+                <div className="text-xl md:text-2xl font-medium text-blue-700 opacity-80 whitespace-nowrap">
+                  {call.sector}
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 

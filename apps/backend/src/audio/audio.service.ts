@@ -41,7 +41,7 @@ export class AudioService {
     });
     setInterval(() => {
       this.dispatchAudios();
-    }, 2000);
+    }, 500);
   }
   registerClient(areaId: number, res: ServerResponse) {
     if (!this.clients.has(areaId)) {
