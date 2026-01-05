@@ -214,19 +214,19 @@ export default function Home() {
         </div>
 
         {/* NOME DO HOSPITAL */}
-        <div className=" text-base sm:text-lg md:text-3xl font-semibold leading-tight max-w-[70%]">
+        <div className=" text-base sm:text-lg md:text-3xl 2xl:text-5xl font-semibold leading-tight max-w-[70%]">
           Hospital Municipal Regional de Atendimento Integrado de *Cidade*
         </div>
 
         {/* RELÓGIO */}
         <div className="ml-auto bg-blue-950/80 px-5 py-3 rounded-lg text-center border border-blue-800/50">
           {/* HORA */}
-          <div className="text-lg sm:text-xl md:text-2xl font-semibold leading-none font-mono">
+          <div className="text-lg sm:text-xl md:text-2xl 2xl:text-4xl font-semibold leading-none font-mono">
             {time}
           </div>
 
           {/* DATA */}
-          <div className="text-sm sm:text-base md:text-xl opacity-80">
+          <div className="text-sm sm:text-base md:text-xl 2xl:text-3xl opacity-80">
             {date}
           </div>
         </div>
@@ -264,10 +264,10 @@ export default function Home() {
         {/* MÉDICO – FIXO NO TOPO ESQUERDO */}
         <div className="absolute top-1 left-1 sm:top-2 sm:left-2 md:top-4 md:left-4 z-20">
           <div className="inline-block bg-white/10 backdrop-blur-md px-3 py-1.5 sm:px-4 sm:py-2 md:py-3 rounded-lg border-l-4 border-blue-400 shadow-lg max-w-[75w] sm:max-w-none">
-            <p className="text-blue-200 text-[10px] sm:text-xs uppercase tracking-widest font-bold">
+            <p className="text-blue-200 text-[10px] sm:text-xs 2xl:text-2xl 2xl:p-1 uppercase tracking-widest font-bold">
               Médico(a)
             </p>
-            <p className="text-white text-sm sm:text-base md:text-xl font-semibold truncate">
+            <p className="text-white text-sm sm:text-base md:text-xl 2xl:text-3xl 2xl:p-1 font-semibold truncate">
               {currentCall?.doctorName ?? "—"}
             </p>
           </div>
@@ -276,16 +276,16 @@ export default function Home() {
         {/* CONTEÚDO CENTRAL */}
         <div className="relative z-10 w-full h-full flex flex-col items-center justify-center p-8 text-center">
           {/* TÍTULO - PACIENTE */}
-          <p className="text-blue-200 text-xl md:text-2xl uppercase tracking-[0.2em] mb-2 font-medium">
+          <p className="text-blue-200 text-xl md:text-2xl 2xl:text-3xl uppercase tracking-[0.2em] mb-2 2xl:mb-4 font-medium">
             Paciente
           </p>
 
-          <h1 className="text-3xl md:text-5xl lg:text-6xl font-black text-white uppercase drop-shadow-lg tracking-wide animate-pulse-once mb-4">
+          <h1 className="text-3xl md:text-5xl lg:text-6xl 2xl:text-7xl font-black text-white uppercase drop-shadow-lg tracking-wide animate-pulse-once mb-4 2xl:mb-6">
             {currentCall?.patientName ?? "—"}
           </h1>
           {currentCall && currentCall.attempt > 1 && (
             <div
-              className={`mb-3 px-4 py-1 rounded-full text-sm font-semibold
+              className={`mb-3 px-4 py-1 rounded-full text-sm font-semibold 2xl:text-3xl
       ${
         currentCall.attempt === 2
           ? "bg-yellow-500/90 text-yellow-950"
@@ -297,8 +297,8 @@ export default function Home() {
             </div>
           )}
           {/* SALA */}
-          <div className="mt-2 md:mt-4 px-8 py-2 bg-blue-950/30 backdrop-blur-sm rounded-full border border-blue-400/20">
-            <p className="text-xl md:text-3xl font-medium text-blue-100">
+          <div className="mt-2 md:mt-4 px-8 py-2 2xl:py-3 bg-blue-950/30 backdrop-blur-sm rounded-full border border-blue-400/20">
+            <p className="text-xl md:text-3xl 2xl:text-5xl font-medium 2xl:font-semibold text-blue-100">
               {currentCall?.sector ?? "—"}
             </p>
           </div>
@@ -309,26 +309,26 @@ export default function Home() {
       <div className="absolute bottom-0 w-full h-[30%] bg-blue-200/90 text-blue-900 z-20 backdrop-blur-md shadow-[0_-10px_40px_rgba(0,0,0,0.1)] flex flex-col">
 
         {/* TÍTULO */}
-        <div className="px-4 py-2 bg-blue-100/80 border-b border-blue-300">
-          <span className="text-lg md:text-2xl font-semibold uppercase tracking-wide text-blue-900">
+        <div className="px-4 py-2 2xl:py-4 bg-blue-100/80 border-b border-blue-300">
+          <span className="text-lg md:text-2xl 2xl:text-4xl font-semibold uppercase tracking-wide text-blue-900">
             Últimas chamadas
           </span>
         </div>
 
         {/* ÁREA DAS CHAMADAS */}
-        <div className="flex-1 px-2 pb-10">
+        <div className="flex-1 px-2 pb-10 2xl:pb-13">
           {/* Grid restaurado para manter colunas horizontais e items-center para centralizar no vácuo do F11 */}
           <div className="grid grid-cols-[2fr_auto_2fr_auto_2fr] h-full items-center">
 
             {/* COLUNA 1 */}
-            <div className="flex flex-col gap-1 md:gap-2 pl-2">
-              <p className="text-[2.5vh] lg:text-[3vh] font-medium leading-tight">
+            <div className="flex flex-col gap-1 md:gap-2 2xl:gap-3 pl-2">
+              <p className="text-[2.5vh] lg:text-[3vh] 2xl:text-[3.5vh] font-medium leading-tight">
                 00:00 — Paciente
               </p>
-              <p className="text-[2.5vh] lg:text-[3vh] font-medium leading-tight">
+              <p className="text-[2.5vh] lg:text-[3vh] 2xl:text-[3.5vh] font-medium leading-tight">
                 00:00 — Paciente
               </p>
-              <p className="text-[2.5vh] lg:text-[3vh] font-medium leading-tight">
+              <p className="text-[2.5vh] lg:text-[3vh] 2xl:text-[3.5vh] font-medium leading-tight">
                 00:00 — Paciente
               </p>
             </div>
@@ -336,94 +336,94 @@ export default function Home() {
         </div>
 
         {/* LINHA / LETREIRO */}
-        <div className="absolute bottom-0 left-0 w-full h-10 bg-blue-500 overflow-hidden flex items-center">
-          <div className="flex whitespace-nowrap animate-marquee text-white font-semibold text-base md:text-lg">
+        <div className="absolute bottom-0 left-0 w-full h-10 2xl:h-14 bg-blue-500 overflow-hidden flex items-center">
+          <div className="flex whitespace-nowrap animate-marquee text-white font-semibold text-base md:text-lg 2xl:text-3xl">
             <div className="flex gap-12 px-6">
               <span className="flex items-center gap-3">
-                <span className="text-xl md:text-2xl leading-none">•</span>
+                <span className="text-xl md:text-2xl 2xl:text-5xl leading-none">•</span>
                 Mantenha o silêncio nas áreas de atendimento
-                <span className="text-xl md:text-2xl leading-none">•</span>
+                <span className="text-xl md:text-2xl 2xl:text-5xl leading-none">•</span>
               </span>
 
               <span className="flex items-center gap-3">
-                <span className="text-xl md:text-2xl leading-none">•</span>
+                <span className="text-xl md:text-2xl 2xl:text-5xl leading-none">•</span>
                 Utilize máscara se estiver com sintomas gripais
-                <span className="text-xl md:text-2xl leading-none">•</span>
+                <span className="text-xl md:text-2xl 2xl:text-5xl leading-none">•</span>
               </span>
 
               <span className="flex items-center gap-3">
-                <span className="text-xl md:text-2xl leading-none">•</span>
+                <span className="text-xl md:text-2xl 2xl:text-5xl leading-none">•</span>
                 Respeite a ordem de chamada dos pacientes
-                <span className="text-xl md:text-2xl leading-none">•</span>
+                <span className="text-xl md:text-2xl 2xl:text-5xl leading-none">•</span>
               </span>
 
               <span className="flex items-center gap-3">
-                <span className="text-xl md:text-2xl leading-none">•</span>
+                <span className="text-xl md:text-2xl 2xl:text-5xl leading-none">•</span>
                 Em caso de dúvidas, procure a recepção
-                <span className="text-xl md:text-2xl leading-none">•</span>
+                <span className="text-xl md:text-2xl 2xl:text-5xl leading-none">•</span>
               </span>
 
               <span className="flex items-center gap-3">
-                <span className="text-xl md:text-2xl leading-none">•</span>
+                <span className="text-xl md:text-2xl 2xl:text-5xl leading-none">•</span>
                 Acompanhe apenas se autorizado pela equipe
-                <span className="text-xl md:text-2xl leading-none">•</span>
+                <span className="text-xl md:text-2xl 2xl:text-5xl leading-none">•</span>
               </span>
 
               <span className="flex items-center gap-3">
-                <span className="text-xl md:text-2xl leading-none">•</span>
+                <span className="text-xl md:text-2xl 2xl:text-5xl leading-none">•</span>
                 Higienize as mãos com frequência
-                <span className="text-xl md:text-2xl leading-none">•</span>
+                <span className="text-xl md:text-2xl 2xl:text-5xl leading-none">•</span>
               </span>
 
               <span className="flex items-center gap-3">
-                <span className="text-xl md:text-2xl leading-none">•</span>
+                <span className="text-xl md:text-2xl 2xl:text-5xl leading-none">•</span>
                 Obrigado por colaborar com um ambiente seguro
-                <span className="text-xl md:text-2xl leading-none">•</span>
+                <span className="text-xl md:text-2xl 2xl:text-5xl leading-none">•</span>
               </span>
             </div>
 
             {/* DUPLICADO */}
             <div className="flex gap-12 px-6">
               <span className="flex items-center gap-3">
-                <span className="text-xl md:text-2xl leading-none">•</span>
+                <span className="text-xl md:text-2xl 2xl:text-5xl leading-none">•</span>
                 Mantenha o silêncio nas áreas de atendimento
-                <span className="text-xl md:text-2xl leading-none">•</span>
+                <span className="text-xl md:text-2xl 2xl:text-5xl leading-none">•</span>
               </span>
 
               <span className="flex items-center gap-3">
-                <span className="text-xl md:text-2xl leading-none">•</span>
+                <span className="text-xl md:text-2xl 2xl:text-5xl leading-none">•</span>
                 Utilize máscara se estiver com sintomas gripais
-                <span className="text-xl md:text-2xl leading-none">•</span>
+                <span className="text-xl md:text-2xl 2xl:text-5xl leading-none">•</span>
               </span>
 
               <span className="flex items-center gap-3">
-                <span className="text-xl md:text-2xl leading-none">•</span>
+                <span className="text-xl md:text-2xl 2xl:text-5xl leading-none">•</span>
                 Respeite a ordem de chamada dos pacientes
-                <span className="text-xl md:text-2xl leading-none">•</span>
+                <span className="text-xl md:text-2xl 2xl:text-5xl leading-none">•</span>
               </span>
 
               <span className="flex items-center gap-3">
-                <span className="text-xl md:text-2xl leading-none">•</span>
+                <span className="text-xl md:text-2xl 2xl:text-5xl leading-none">•</span>
                 Em caso de dúvidas, procure a recepção
-                <span className="text-xl md:text-2xl leading-none">•</span>
+                <span className="text-xl md:text-2xl 2xl:text-5xl leading-none">•</span>
               </span>
 
               <span className="flex items-center gap-3">
-                <span className="text-xl md:text-2xl leading-none">•</span>
+                <span className="text-xl md:text-2xl 2xl:text-5xl leading-none">•</span>
                 Acompanhe apenas se autorizado pela equipe
-                <span className="text-xl md:text-2xl leading-none">•</span>
+                <span className="text-xl md:text-2xl 2xl:text-5xl leading-none">•</span>
               </span>
 
               <span className="flex items-center gap-3">
-                <span className="text-xl md:text-2xl leading-none">•</span>
+                <span className="text-xl md:text-2xl 2xl:text-5xl leading-none">•</span>
                 Higienize as mãos com frequência
-                <span className="text-xl md:text-2xl leading-none">•</span>
+                <span className="text-xl md:text-2xl 2xl:text-5xl leading-none">•</span>
               </span>
 
               <span className="flex items-center gap-3">
-                <span className="text-xl md:text-2xl leading-none">•</span>
+                <span className="text-xl md:text-2xl 2xl:text-5xl leading-none">•</span>
                 Obrigado por colaborar com um ambiente seguro
-                <span className="text-xl md:text-2xl leading-none">•</span>
+                <span className="text-xl md:text-2xl 2xl:text-5xl leading-none">•</span>
               </span>
             </div>
           </div>
