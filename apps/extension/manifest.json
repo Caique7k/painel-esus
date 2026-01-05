@@ -1,0 +1,22 @@
+{
+  "manifest_version": 3,
+  "name": "PEC - Botão Chamar",
+  "version": "1.0.0",
+  "host_permissions": [
+    "https://esus.dumont.sp.gov.br/lista-atendimento",
+    "https://pec.guatapara.sp.gov.br/lista-atendimento",
+    "http://localhost:3001/*"
+  ],
+  "permissions": ["storage"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://esus.dumont.sp.gov.br/lista-atendimento","https://pec.guatapara.sp.gov.br/lista-atendimento"],
+      "js": ["content.js"],
+      "css": ["content.css"],
+      "run_at": "document_start"
+    }
+  ]
+}

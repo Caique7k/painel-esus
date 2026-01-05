@@ -1,0 +1,10 @@
+.pec-ext-chamar-btn{
+  margin-right: 8px;
+  padding: 6px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(0,0,0,.15);
+  background: #fff;
+  font-weight: 600;
+  cursor: pointer;
+}
+.pec-ext-chamar-btn:hover{ filter: brightness(.95); }
