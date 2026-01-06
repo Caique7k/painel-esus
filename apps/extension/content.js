@@ -351,25 +351,7 @@ function sync() {
 }
 
 function getNomePaciente(card) {
-  const blacklist = [
-    "Aguardando atendimento",
-    "Em atendimento",
-    "Finalizado",
-    "Não agendado",
-    "DEMANDA ESPONTÂNEA",
-  ];
-  const spans = Array.from(card.querySelectorAll("span"))
-    .map((s) => (s.textContent || "").replace(/\s+/g, " ").trim())
-    .filter(Boolean);
-
-  const candidatos = spans.filter((t) => {
-    if (blacklist.some((b) => t.includes(b))) return false;
-    if (t.includes("anos") || /^\d{2}:\d{2}$/.test(t) || t.length < 5)
-      return false;
-    return /[A-Z]/.test(t);
-  });
-  candidatos.sort((a, b) => b.length - a.length);
-  return candidatos[0] || "";
+  return card.querySelector("span.css-11zrb1w")?.textContent?.trim() || "";
 }
 
 function getUsuarioLogado() {
