@@ -23,6 +23,7 @@ async function fetchAreasAndSectors() {
   if (!res.ok) throw new Error("Erro ao buscar setores");
   return res.json();
 }
+
 async function showConfigModal() {
   const backdrop = document.createElement("div");
   backdrop.className = "pec-ext-modal-backdrop";
@@ -122,16 +123,16 @@ function boot() {
   })();
   sync();
 
-  // Observer mais completo (pega troca de texto e mudanças internas)
+  // Observer mais completo
   const obs = new MutationObserver(() => scheduleSync());
   obs.observe(document.documentElement, {
     subtree: true,
     childList: true,
-    characterData: true, // <- pega mudanças em texto
-    attributes: true, // <- pega mudanças de atributos (às vezes status troca via atributo/classe)
+    characterData: true,
+    attributes: true,
   });
 
-  // Fallback: garante acompanhamento mesmo se o observer não disparar
+  // Fallback
   setInterval(sync, 800);
 }
 
@@ -139,7 +140,6 @@ let syncScheduled = false;
 function scheduleSync() {
   if (syncScheduled) return;
   syncScheduled = true;
-  // debounce pra não rodar mil vezes
   requestAnimationFrame(() => {
     syncScheduled = false;
     sync();
@@ -170,19 +170,16 @@ function getNomePaciente(card) {
     .map((s) => (s.textContent || "").replace(/\s+/g, " ").trim())
     .filter(Boolean);
 
-  // 1) remove coisas que não são nome
   const candidatos = spans.filter((t) => {
     if (blacklist.some((b) => t.includes(b))) return false;
     if (t.includes("anos")) return false; // idade
     if (/^\d{2}:\d{2}$/.test(t)) return false; // horário
     if (t.length < 8) return false; // muito curto
-    // “nome” costuma ter letras e espaços, e geralmente vem em CAPS no seu layout
     const isCaps = t === t.toUpperCase();
     const hasLetters = /[A-ZÁÉÍÓÚÂÊÔÃÕÇ]/.test(t);
     return isCaps && hasLetters;
   });
 
-  // 2) pega o melhor candidato (geralmente o mais longo é o nome)
   candidatos.sort((a, b) => b.length - a.length);
 
   return candidatos[0] || "";
@@ -198,7 +195,6 @@ function getUsuarioLogado() {
 }
 
 function hasExactText(card, text) {
-  // procura o status pelo texto dentro do card (span/div/p)
   const els = card.querySelectorAll("span, div, p, small");
   for (const el of els) {
     if ((el.textContent || "").trim() === text) return true;
@@ -206,7 +202,10 @@ function hasExactText(card, text) {
   return false;
 }
 
+// --- LÓGICA DO BOTÃO E ANIMAÇÃO ---
+
 function ensureButton(card) {
+  // Se já existe, não recria (mantém o estado/fase atual)
   if (card.querySelector(`.${BTN_CLASS}`)) return;
 
   const menuBtn = card.querySelector(MENU_BTN_SEL);
@@ -217,8 +216,80 @@ function ensureButton(card) {
   const btn = document.createElement("button");
   btn.type = "button";
   btn.className = BTN_CLASS;
+  
+  // Estado inicial
   btn.textContent = "Chamar";
-  btn.addEventListener("click", async () => {
+  btn.dataset.phase = "0"; // 0: Branco, 1: Amarelo, 2: Vermelho, 3: Finalizado
+
+  btn.addEventListener("click", (e) => handleButtonFlow(e, btn, card));
+
+  container.insertBefore(btn, menuBtn);
+}
+
+async function handleButtonFlow(e, btn, card) {
+  e.preventDefault();
+  e.stopPropagation(); // Garante que não clique em nada atrás
+
+  const phase = parseInt(btn.dataset.phase || "0");
+
+  // Se já estiver finalizado ou animando, ignora
+  if (phase >= 3 || btn.classList.contains("animating")) return;
+
+  // 1. Confirmação
+  const paciente = getNomePaciente(card);
+  const confirmMsg = `Deseja realmente chamar o paciente: \n${paciente}?`;
+  
+  // O clique só é "captado" (processado) se confirmar
+  if (!confirm(confirmMsg)) {
+    return; 
+  }
+
+  // 2. Dispara API (funcionalidade original)
+  await callApi(card);
+
+  // 3. Inicia Animação e Transição de Fase
+  startAnimation(btn, phase);
+}
+
+function startAnimation(btn, currentPhase) {
+  // Adiciona classe para escurecer e travar cliques
+  btn.classList.add("animating");
+  
+  let dots = 1;
+  btn.textContent = ".";
+
+  // Loop da animação de pontos
+  const animInterval = setInterval(() => {
+    dots++;
+    if (dots > 3) dots = 1;
+    btn.textContent = ".".repeat(dots);
+  }, 400); // Velocidade da troca de pontos
+
+  // Duração da animação (ex: 3 segundos)
+  setTimeout(() => {
+    clearInterval(animInterval);
+    btn.classList.remove("animating");
+    
+    // Avança para a próxima fase
+    const nextPhase = currentPhase + 1;
+    btn.dataset.phase = nextPhase.toString();
+
+    updateButtonVisuals(btn, nextPhase);
+  }, 3000); 
+}
+
+function updateButtonVisuals(btn, phase) {
+  if (phase === 1) {
+    btn.textContent = "Chamar"; // Fundo amarelo (via CSS)
+  } else if (phase === 2) {
+    btn.textContent = "Chamar"; // Fundo vermelho (via CSS)
+  } else if (phase === 3) {
+    btn.textContent = "Limite de chamadas excedidas"; // Fundo roxo (via CSS)
+    btn.disabled = true; // Não clicável
+  }
+}
+
+async function callApi(card) {
     const config = await getConfig();
     if (!config) {
       alert("Extensão não configurada");
@@ -236,37 +307,23 @@ function ensureButton(card) {
 
     const API_URL = "http://localhost:3001/call";
 
-    chrome.runtime.sendMessage(
-      {
-        type: "POST_TO_API",
-        url: API_URL,
-        payload,
-        // headers opcionais (ex: token)
-        headers: {
-          // "Authorization": "Bearer SEU_TOKEN"
-        },
-      },
-      (resp) => {
-        if (!resp) {
-          console.log("[PEC-EXT] Sem resposta do background");
-          return;
-        }
-
-        if (resp.ok) {
-          console.log("[PEC-EXT] Enviado com sucesso:", resp.status, resp.body);
-        } else {
-          console.error(
-            "[PEC-EXT] Falha ao enviar:",
-            resp.status,
-            resp.error || resp.body
+    return new Promise(resolve => {
+        chrome.runtime.sendMessage(
+            {
+              type: "POST_TO_API",
+              url: API_URL,
+              payload,
+            },
+            (resp) => {
+              if (resp && resp.ok) {
+                console.log("[PEC-EXT] API ok");
+              } else {
+                console.error("[PEC-EXT] API fail", resp);
+              }
+              resolve(); // Resolvemos sempre para não travar a animação visual em caso de erro de rede
+            }
           );
-          alert("Falha ao enviar para API. Veja o console.");
-        }
-      }
-    );
-  });
-
-  container.insertBefore(btn, menuBtn);
+    });
 }
 
 function cleanupButton(card) {
@@ -278,4 +335,3 @@ window.__PEC_DEBUG__ = {
   showConfigModal,
   getConfig,
 };
-console.log("[PEC-EXT] content script carregado");

@@ -1,16 +1,64 @@
+/* BASE DO BOTÃO */
 .pec-ext-chamar-btn {
   margin-right: 8px;
-  padding: 6px 10px;
+  padding: 6px 12px; /* Levemente maior para acomodar texto final */
   border-radius: 10px;
   border: 1px solid rgba(0, 0, 0, 0.15);
-  background: #fff;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
+  transition: all 0.2s ease;
+  min-width: 80px; /* Para evitar pulos de tamanho muito grandes */
+  text-align: center;
 }
-.pec-ext-chamar-btn:hover {
-  filter: brightness(0.95);
+
+/* FASE 0: INICIAL (BRANCO) */
+.pec-ext-chamar-btn[data-phase="0"] {
+  background: #fff;
+  color: #000;
 }
-/* BACKDROP */
+/* Ao clicar ou durante animação: Escurece */
+.pec-ext-chamar-btn[data-phase="0"]:hover { filter: brightness(0.95); }
+.pec-ext-chamar-btn[data-phase="0"]:active,
+.pec-ext-chamar-btn[data-phase="0"].animating {
+  background: #cbd5e1; /* Cinza mais escuro */
+  border-color: #94a3b8;
+}
+
+/* FASE 1: SEGUNDA TENTATIVA (AMARELO) */
+.pec-ext-chamar-btn[data-phase="1"] {
+  background: #fde047; /* Amarelo vibrante */
+  color: #000;
+  border-color: #eab308;
+}
+.pec-ext-chamar-btn[data-phase="1"]:hover { filter: brightness(0.95); }
+.pec-ext-chamar-btn[data-phase="1"]:active,
+.pec-ext-chamar-btn[data-phase="1"].animating {
+  background: #eab308; /* Amarelo escuro */
+}
+
+/* FASE 2: TERCEIRA TENTATIVA (VERMELHO) */
+.pec-ext-chamar-btn[data-phase="2"] {
+  background: #ef4444; /* Vermelho */
+  color: #fff;
+  border-color: #b91c1c;
+}
+.pec-ext-chamar-btn[data-phase="2"]:hover { filter: brightness(0.95); }
+.pec-ext-chamar-btn[data-phase="2"]:active,
+.pec-ext-chamar-btn[data-phase="2"].animating {
+  background: #b91c1c; /* Vermelho escuro */
+}
+
+/* FASE 3: FINALIZADO (ROXO LEVE) */
+.pec-ext-chamar-btn[data-phase="3"] {
+  background: #d8b4fe; /* Roxo claro */
+  color: #fff;
+  border: 1px solid #a855f7;
+  cursor: not-allowed;
+  opacity: 0.9;
+}
+
+
+/* --- CSS DO MODAL (MANTIDO ORIGINAL) --- */
 .pec-ext-modal-backdrop {
   position: fixed;
   inset: 0;
@@ -21,7 +69,6 @@
   justify-content: center;
 }
 
-/* MODAL */
 .pec-ext-modal {
   background: #fff;
   border-radius: 16px;
