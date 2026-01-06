@@ -116,7 +116,7 @@ export class AudioService {
       const speechText =
         attempt === 1
           ? `Paciente ${call.patient_name}, dirigir-se ao ${call.sector} com ${call.doctor_name}.`
-          : `Paciente ${call.patient_name}, dirigir-se ao ${call.sector} com ${call.doctor_name}. Chamada número ${attempt}.`;
+          : `Paciente ${call.patient_name}, dirigir-se ao ${call.sector} com ${call.doctor_name} chamada número ${attempt}.`;
 
       // 4️⃣ Gera áudio
       const audioUrl = await this.ttsService.generateAudio(speechText);

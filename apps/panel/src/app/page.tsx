@@ -301,7 +301,7 @@ export default function Home() {
         <div className="absolute top-1 left-1 sm:top-2 sm:left-2 md:top-4 md:left-4 z-20">
           <div className="inline-block bg-white/10 backdrop-blur-md px-3 py-1.5 sm:px-4 sm:py-2 md:py-3 rounded-lg border-l-4 border-blue-400 shadow-lg max-w-[75w] sm:max-w-none">
             <p className="text-blue-200 text-[10px] sm:text-xs 2xl:text-2xl 2xl:p-1 uppercase tracking-widest font-bold">
-              Médico(a)
+              Profissional
             </p>
             <p className="text-white text-sm sm:text-base md:text-xl 2xl:text-3xl 2xl:p-1 font-semibold truncate">
               {currentCall?.doctorName ?? "—"}
@@ -354,7 +354,6 @@ export default function Home() {
         <div className="flex-1 px-2 pb-10 2xl:pb-13">
           {/* Grid restaurado para manter colunas horizontais e items-center para centralizar no vácuo do F11 */}
           <div className="grid grid-cols-[1fr_16fr_1.8fr] 2xl:grid-cols-[1fr_10fr_1.7fr] h-full items-center">
-
             {/* COLUNA 1 - HORÁRIOS*/}
             <div className="flex flex-col gap-1 md:gap-2 2xl:gap-3 pl-2">
               <p className="text-[2.5vh] lg:text-xl 2xl:text-[3.5vh] font-medium leading-tight">
@@ -407,90 +406,146 @@ export default function Home() {
           <div className="flex whitespace-nowrap animate-marquee text-white font-semibold text-base md:text-lg 2xl:text-3xl">
             <div className="flex gap-12 px-6">
               <span className="flex items-center gap-3">
-                <span className="text-xl md:text-2xl 2xl:text-5xl leading-none">•</span>
+                <span className="text-xl md:text-2xl 2xl:text-5xl leading-none">
+                  •
+                </span>
                 Mantenha o silêncio nas áreas de atendimento
-                <span className="text-xl md:text-2xl 2xl:text-5xl leading-none">•</span>
+                <span className="text-xl md:text-2xl 2xl:text-5xl leading-none">
+                  •
+                </span>
               </span>
 
               <span className="flex items-center gap-3">
-                <span className="text-xl md:text-2xl 2xl:text-5xl leading-none">•</span>
+                <span className="text-xl md:text-2xl 2xl:text-5xl leading-none">
+                  •
+                </span>
                 Utilize máscara se estiver com sintomas gripais
-                <span className="text-xl md:text-2xl 2xl:text-5xl leading-none">•</span>
+                <span className="text-xl md:text-2xl 2xl:text-5xl leading-none">
+                  •
+                </span>
               </span>
 
               <span className="flex items-center gap-3">
-                <span className="text-xl md:text-2xl 2xl:text-5xl leading-none">•</span>
+                <span className="text-xl md:text-2xl 2xl:text-5xl leading-none">
+                  •
+                </span>
                 Respeite a ordem de chamada dos pacientes
-                <span className="text-xl md:text-2xl 2xl:text-5xl leading-none">•</span>
+                <span className="text-xl md:text-2xl 2xl:text-5xl leading-none">
+                  •
+                </span>
               </span>
 
               <span className="flex items-center gap-3">
-                <span className="text-xl md:text-2xl 2xl:text-5xl leading-none">•</span>
+                <span className="text-xl md:text-2xl 2xl:text-5xl leading-none">
+                  •
+                </span>
                 Em caso de dúvidas, procure a recepção
-                <span className="text-xl md:text-2xl 2xl:text-5xl leading-none">•</span>
+                <span className="text-xl md:text-2xl 2xl:text-5xl leading-none">
+                  •
+                </span>
               </span>
 
               <span className="flex items-center gap-3">
-                <span className="text-xl md:text-2xl 2xl:text-5xl leading-none">•</span>
+                <span className="text-xl md:text-2xl 2xl:text-5xl leading-none">
+                  •
+                </span>
                 Acompanhe apenas se autorizado pela equipe
-                <span className="text-xl md:text-2xl 2xl:text-5xl leading-none">•</span>
+                <span className="text-xl md:text-2xl 2xl:text-5xl leading-none">
+                  •
+                </span>
               </span>
 
               <span className="flex items-center gap-3">
-                <span className="text-xl md:text-2xl 2xl:text-5xl leading-none">•</span>
+                <span className="text-xl md:text-2xl 2xl:text-5xl leading-none">
+                  •
+                </span>
                 Higienize as mãos com frequência
-                <span className="text-xl md:text-2xl 2xl:text-5xl leading-none">•</span>
+                <span className="text-xl md:text-2xl 2xl:text-5xl leading-none">
+                  •
+                </span>
               </span>
 
               <span className="flex items-center gap-3">
-                <span className="text-xl md:text-2xl 2xl:text-5xl leading-none">•</span>
+                <span className="text-xl md:text-2xl 2xl:text-5xl leading-none">
+                  •
+                </span>
                 Obrigado por colaborar com um ambiente seguro
-                <span className="text-xl md:text-2xl 2xl:text-5xl leading-none">•</span>
+                <span className="text-xl md:text-2xl 2xl:text-5xl leading-none">
+                  •
+                </span>
               </span>
             </div>
 
             {/* DUPLICADO */}
             <div className="flex gap-12 px-6">
               <span className="flex items-center gap-3">
-                <span className="text-xl md:text-2xl 2xl:text-5xl leading-none">•</span>
+                <span className="text-xl md:text-2xl 2xl:text-5xl leading-none">
+                  •
+                </span>
                 Mantenha o silêncio nas áreas de atendimento
-                <span className="text-xl md:text-2xl 2xl:text-5xl leading-none">•</span>
+                <span className="text-xl md:text-2xl 2xl:text-5xl leading-none">
+                  •
+                </span>
               </span>
 
               <span className="flex items-center gap-3">
-                <span className="text-xl md:text-2xl 2xl:text-5xl leading-none">•</span>
+                <span className="text-xl md:text-2xl 2xl:text-5xl leading-none">
+                  •
+                </span>
                 Utilize máscara se estiver com sintomas gripais
-                <span className="text-xl md:text-2xl 2xl:text-5xl leading-none">•</span>
+                <span className="text-xl md:text-2xl 2xl:text-5xl leading-none">
+                  •
+                </span>
               </span>
 
               <span className="flex items-center gap-3">
-                <span className="text-xl md:text-2xl 2xl:text-5xl leading-none">•</span>
+                <span className="text-xl md:text-2xl 2xl:text-5xl leading-none">
+                  •
+                </span>
                 Respeite a ordem de chamada dos pacientes
-                <span className="text-xl md:text-2xl 2xl:text-5xl leading-none">•</span>
+                <span className="text-xl md:text-2xl 2xl:text-5xl leading-none">
+                  •
+                </span>
               </span>
 
               <span className="flex items-center gap-3">
-                <span className="text-xl md:text-2xl 2xl:text-5xl leading-none">•</span>
+                <span className="text-xl md:text-2xl 2xl:text-5xl leading-none">
+                  •
+                </span>
                 Em caso de dúvidas, procure a recepção
-                <span className="text-xl md:text-2xl 2xl:text-5xl leading-none">•</span>
+                <span className="text-xl md:text-2xl 2xl:text-5xl leading-none">
+                  •
+                </span>
               </span>
 
               <span className="flex items-center gap-3">
-                <span className="text-xl md:text-2xl 2xl:text-5xl leading-none">•</span>
+                <span className="text-xl md:text-2xl 2xl:text-5xl leading-none">
+                  •
+                </span>
                 Acompanhe apenas se autorizado pela equipe
-                <span className="text-xl md:text-2xl 2xl:text-5xl leading-none">•</span>
+                <span className="text-xl md:text-2xl 2xl:text-5xl leading-none">
+                  •
+                </span>
               </span>
 
               <span className="flex items-center gap-3">
-                <span className="text-xl md:text-2xl 2xl:text-5xl leading-none">•</span>
+                <span className="text-xl md:text-2xl 2xl:text-5xl leading-none">
+                  •
+                </span>
                 Higienize as mãos com frequência
-                <span className="text-xl md:text-2xl 2xl:text-5xl leading-none">•</span>
+                <span className="text-xl md:text-2xl 2xl:text-5xl leading-none">
+                  •
+                </span>
               </span>
 
               <span className="flex items-center gap-3">
-                <span className="text-xl md:text-2xl 2xl:text-5xl leading-none">•</span>
+                <span className="text-xl md:text-2xl 2xl:text-5xl leading-none">
+                  •
+                </span>
                 Obrigado por colaborar com um ambiente seguro
-                <span className="text-xl md:text-2xl 2xl:text-5xl leading-none">•</span>
+                <span className="text-xl md:text-2xl 2xl:text-5xl leading-none">
+                  •
+                </span>
               </span>
             </div>
           </div>
