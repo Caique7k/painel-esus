@@ -20,7 +20,11 @@ async function bootstrap() {
 
   // 🔑 CORS DO FASTIFY (ESSENCIAL PARA SSE)
   await app.register(fastifyCors, {
-    origin: 'http://localhost:3000',
+    origin: [
+      'https://esus.dumont.sp.gov.br',
+      'https://pec.guatapara.sp.gov.br',
+      'http://localhost:3000',
+    ],
     credentials: true,
   });
 
