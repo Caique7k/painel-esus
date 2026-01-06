@@ -3,6 +3,11 @@ const CARD_SEL = 'div[data-testid="cidadao.listaAtendimento"]';
 const MENU_BTN_SEL = 'button[title="Mais opções"][aria-haspopup="true"]';
 const CONFIG_KEY = "pec_config";
 const BTN_CLASS = "pec-ext-chamar-btn";
+let EXTENSION_ALIVE = true;
+let observer = null;
+let syncInterval = null;
+let CACHED_CONFIG = null;
+let CONFIG_LOADED = false;
 
 // --- 1. INJEÇÃO DE ESTILOS (CORES E ANIMAÇÃO) ---
 function injectStyles() {
@@ -68,14 +73,27 @@ function injectStyles() {
   style.textContent = css;
   document.head.appendChild(style);
 }
-
+window.addEventListener("unload", () => {
+  EXTENSION_ALIVE = false;
+  observer?.disconnect();
+  clearInterval(syncInterval);
+});
 // --- CONFIGURAÇÃO E STORAGE ---
 
 function getConfig() {
   return new Promise((resolve) => {
-    chrome.storage.local.get([CONFIG_KEY], (res) =>
-      resolve(res[CONFIG_KEY] || null)
-    );
+    if (!EXTENSION_ALIVE || !chrome?.storage?.local) {
+      resolve(null);
+      return;
+    }
+
+    try {
+      chrome.storage.local.get([CONFIG_KEY], (res) => {
+        resolve(res?.[CONFIG_KEY] || null);
+      });
+    } catch {
+      resolve(null);
+    }
   });
 }
 
@@ -86,21 +104,46 @@ function getPatientKey(card, sectorId) {
 
 function getCallAttempts() {
   return new Promise((resolve) => {
-    chrome.storage.local.get(["pec_call_attempts"], (res) =>
-      resolve(res.pec_call_attempts || {})
-    );
+    if (!EXTENSION_ALIVE || !chrome?.storage?.local) {
+      resolve({});
+      return;
+    }
+
+    try {
+      chrome.storage.local.get(["pec_call_attempts"], (res) => {
+        resolve(res?.pec_call_attempts || {});
+      });
+    } catch {
+      resolve({});
+    }
   });
 }
 
 function saveCallAttempts(data) {
   return new Promise((resolve) => {
-    chrome.storage.local.set({ pec_call_attempts: data }, resolve);
+    if (!EXTENSION_ALIVE || !chrome?.storage?.local) {
+      resolve();
+      return;
+    }
+    try {
+      chrome.storage.local.set({ pec_call_attempts: data }, resolve);
+    } catch {
+      resolve({});
+    }
   });
 }
 
 function saveConfig(config) {
   return new Promise((resolve) => {
-    chrome.storage.local.set({ [CONFIG_KEY]: config }, resolve);
+    if (!EXTENSION_ALIVE || !chrome?.storage?.local) {
+      resolve();
+      return;
+    }
+    try {
+      chrome.storage.local.set({ [CONFIG_KEY]: config }, resolve);
+    } catch {
+      resolve({});
+    }
   });
 }
 
@@ -141,7 +184,48 @@ function updateButtonVisuals(btn, attempts, isLoading = false) {
     btn.disabled = true; // Bloqueia clique
   }
 }
+function showConfirmModal({
+  title,
+  message,
+  confirmText = "Sim",
+  cancelText = "Cancelar",
+}) {
+  return new Promise((resolve) => {
+    const backdrop = document.createElement("div");
+    backdrop.className = "pec-ext-modal-backdrop";
 
+    backdrop.innerHTML = `
+      <div class="pec-ext-modal">
+        <h3>${title}</h3>
+        <p>${message}</p>
+        <div style="display:flex; gap:10px; justify-content:flex-end;">
+          <button id="pec-cancel" style="background-color: #ccc;">${cancelText}</button>
+          <button id="pec-confirm">${confirmText}</button>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(backdrop);
+
+    backdrop.querySelector("#pec-cancel").onclick = () => {
+      backdrop.remove();
+      resolve(false);
+    };
+
+    backdrop.querySelector("#pec-confirm").onclick = () => {
+      backdrop.remove();
+      resolve(true);
+    };
+
+    // Clique fora cancela
+    backdrop.onclick = (e) => {
+      if (e.target === backdrop) {
+        backdrop.remove();
+        resolve(false);
+      }
+    };
+  });
+}
 async function showConfigModal() {
   // ... (Mantive igual ao seu código original, só simplifiquei para caber aqui)
   const backdrop = document.createElement("div");
@@ -195,6 +279,14 @@ async function showConfigModal() {
         sectorId,
         sectorName: sector.name,
       });
+
+      CACHED_CONFIG = {
+        areaId,
+        areaName: area.areaName,
+        sectorId,
+        sectorName: sector.name,
+      };
+      CONFIG_LOADED = true;
       backdrop.remove();
       alert("Configurado! Atualize a página.");
     });
@@ -210,9 +302,20 @@ function boot() {
   console.log("[PEC-EXT] Iniciando...");
   injectStyles(); // Injeta o CSS
 
+  async function loadConfigOnce() {
+    if (CONFIG_LOADED) return CACHED_CONFIG;
+
+    CACHED_CONFIG = await getConfig();
+    CONFIG_LOADED = true;
+
+    if (!CACHED_CONFIG) {
+      showConfigModal();
+    }
+
+    return CACHED_CONFIG;
+  }
   (async () => {
-    const config = await getConfig();
-    if (!config) showConfigModal();
+    await loadConfigOnce();
   })();
 
   sync();
@@ -237,6 +340,8 @@ function scheduleSync() {
 }
 
 function sync() {
+  if (!EXTENSION_ALIVE) return;
+
   const cards = document.querySelectorAll(CARD_SEL);
   cards.forEach((card) => {
     const isAguardando = hasExactText(card, STATUS_ALVO);
@@ -286,6 +391,7 @@ function hasExactText(card, text) {
 
 // --- PRINCIPAL MUDANÇA AQUI ---
 async function ensureButton(card) {
+  if (!EXTENSION_ALIVE) return;
   let btn = card.querySelector(`.${BTN_CLASS}`);
   const menuBtn = card.querySelector(MENU_BTN_SEL);
 
@@ -301,9 +407,26 @@ async function ensureButton(card) {
     btn.type = "button";
     btn.className = BTN_CLASS;
     btn.textContent = "Chamar";
-
+    btn.dataset.processing = "false";
     // Evento de Click
     btn.addEventListener("click", async () => {
+      if (btn.dataset.processing === "true") return;
+
+      const patientName = getNomePaciente(card);
+
+      const confirmed = await showConfirmModal({
+        title: "Confirmar chamada",
+        message: `Deseja realmente chamar o paciente "${patientName}"?`,
+        confirmText: "Chamar",
+        cancelText: "Cancelar",
+      });
+
+      if (!confirmed) return;
+
+      // 🔒 trava imediatamente
+      btn.dataset.processing = "true";
+      btn.disabled = true;
+
       handleButtonClick(card, btn);
     });
 
@@ -312,23 +435,26 @@ async function ensureButton(card) {
 
   // ATUALIZAÇÃO VISUAL: Busca o estado atual e pinta o botão corretamente
   // Fazemos isso a cada sync para garantir que se você atualizar a página, os botões voltem com a cor certa
-  const config = await getConfig();
+  const config = CACHED_CONFIG;
   if (config) {
     const attemptsData = await getCallAttempts();
     const patientKey = getPatientKey(card, config.sectorId);
     const record = attemptsData[patientKey] || { attempts: 0 };
 
     // Só atualiza visual se não estiver clicado/carregando no momento
-    if (!btn.disabled) {
+    if (btn.dataset.processing !== "true") {
       updateButtonVisuals(btn, record.attempts);
     }
   }
 }
 
 async function handleButtonClick(card, btn) {
-  const config = await getConfig();
+  const config = CACHED_CONFIG;
+
   if (!config) {
-    showConfigModal();
+    console.warn("[PEC-EXT] Config ainda não carregada");
+    btn.dataset.processing = "false";
+    btn.disabled = false;
     return;
   }
 
@@ -369,6 +495,7 @@ async function handleButtonClick(card, btn) {
     { type: "POST_TO_API", url: `http://localhost:3001${endpoint}`, payload },
     async (resp) => {
       if (!resp || !resp.ok) {
+        btn.dataset.processing = "false";
         btn.disabled = false;
         btn.textContent = "Erro API";
         btn.className = BTN_CLASS; // Reseta cor para azul/padrão momentaneamente
@@ -390,6 +517,7 @@ async function handleButtonClick(card, btn) {
       await saveCallAttempts(attemptsData);
 
       // Aplica a nova cor baseada no novo número de tentativas
+      btn.dataset.processing = "false";
       updateButtonVisuals(btn, nextAttempt);
     }
   );
