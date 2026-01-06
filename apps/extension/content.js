@@ -3,6 +3,25 @@ const CARD_SEL = 'div[data-testid="cidadao.listaAtendimento"]';
 const MENU_BTN_SEL = 'button[title="Mais opções"][aria-haspopup="true"]';
 const CONFIG_KEY = "pec_config";
 const BTN_CLASS = "pec-ext-chamar-btn";
+const CALL_ATTEMPTS_KEY = "pec_call_attempts";
+
+function getCallAttempts() {
+  return new Promise((resolve) => {
+    chrome.storage.local.get([CALL_ATTEMPTS_KEY], (res) => {
+      resolve(res[CALL_ATTEMPTS_KEY] || {});
+    });
+  });
+}
+
+function saveCallAttempts(data) {
+  return new Promise((resolve) => {
+    chrome.storage.local.set({ [CALL_ATTEMPTS_KEY]: data }, resolve);
+  });
+}
+
+function getPatientKey(card, sectorId) {
+  return `${getNomePaciente(card)}|${sectorId}`;
+}
 
 function getConfig() {
   return new Promise((resolve) => {

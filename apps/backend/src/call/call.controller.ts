@@ -25,6 +25,7 @@ export class CallController {
       body.sectorId,
     );
   }
+
   // Endpoint para listar todas as chamadas
   @Get()
   async listCalls() {
