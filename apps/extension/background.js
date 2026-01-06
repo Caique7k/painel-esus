@@ -7,26 +7,31 @@ chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          ...(msg.headers || {})
+          ...(msg.headers || {}),
         },
-        body: JSON.stringify(msg.payload)
+        body: JSON.stringify(msg.payload),
       });
 
-      const text = await res.text().catch(() => "");
+      let body = null;
+      try {
+        body = await res.json(); // ✅ JSON
+      } catch {
+        body = null;
+      }
+
       sendResponse({
         ok: res.ok,
         status: res.status,
-        body: text
+        body,
       });
     } catch (err) {
       sendResponse({
         ok: false,
         status: 0,
-        error: String(err)
+        error: String(err),
       });
     }
   })();
 
-  // importante no MV3: manter a resposta async aberta
   return true;
 });
