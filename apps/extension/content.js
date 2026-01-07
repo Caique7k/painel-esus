@@ -3,6 +3,11 @@ const CARD_SEL = 'div[data-testid="cidadao.listaAtendimento"]';
 const MENU_BTN_SEL = 'button[title="Mais opções"][aria-haspopup="true"]';
 const CONFIG_KEY = "pec_config";
 const BTN_CLASS = "pec-ext-chamar-btn";
+
+// --- NOVAS CONSTANTES DE TEMPO ---
+const CLICK_DELAY_MS = 10000; // 10 segundos de intervalo entre cliques
+const TIME_WINDOW_MS = 5 * 60 * 1000; // 5 minutos de janela total
+
 let EXTENSION_ALIVE = true;
 let observer = null;
 let syncInterval = null;
@@ -32,6 +37,8 @@ function injectStyles() {
     /* Estados de Cor */
     .${BTN_CLASS}.attempt-1 { background-color: #f1c40f; color: #000; } /* Amarelo */
     .${BTN_CLASS}.attempt-2 { background-color: #e74c3c; color: white; } /* Vermelho */
+    
+    /* Estado Bloqueado (3 tentativas) */
     .${BTN_CLASS}.attempt-blocked { 
       background-color: #8e44ad; /* Roxo */
       color: white; 
@@ -39,12 +46,19 @@ function injectStyles() {
       opacity: 0.9;
     }
 
+    /* --- NOVO: Estado Expirado (Tempo > 5min) --- */
+    .${BTN_CLASS}.expired {
+      background-color: #95a5a6; /* Cinza */
+      color: white;
+      cursor: not-allowed;
+      opacity: 0.8;
+    }
+
     /* Estado Carregando */
     .${BTN_CLASS}.loading {
       cursor: wait;
       opacity: 0.7;
     }
-    /* Animação dos pontinhos (...) */
     .${BTN_CLASS}.loading::after {
       content: ' .';
       animation: dots 1s steps(5, end) infinite;
@@ -73,11 +87,13 @@ function injectStyles() {
   style.textContent = css;
   document.head.appendChild(style);
 }
+
 window.addEventListener("unload", () => {
   EXTENSION_ALIVE = false;
   observer?.disconnect();
   clearInterval(syncInterval);
 });
+
 // --- CONFIGURAÇÃO E STORAGE ---
 
 function getConfig() {
@@ -86,7 +102,6 @@ function getConfig() {
       resolve(null);
       return;
     }
-
     try {
       chrome.storage.local.get([CONFIG_KEY], (res) => {
         resolve(res?.[CONFIG_KEY] || null);
@@ -108,7 +123,6 @@ function getCallAttempts() {
       resolve({});
       return;
     }
-
     try {
       chrome.storage.local.get(["pec_call_attempts"], (res) => {
         resolve(res?.pec_call_attempts || {});
@@ -150,40 +164,55 @@ function saveConfig(config) {
 // --- LÓGICA DE UI E API ---
 
 async function fetchAreasAndSectors() {
+  // Ajuste o IP/Porta conforme necessário
   const res = await fetch("http://localhost:3001/sector");
   if (!res.ok) throw new Error("Erro ao buscar setores");
   return res.json();
 }
 
-// Função auxiliar para definir a aparência do botão baseada no nº de tentativas
-function updateButtonVisuals(btn, attempts, isLoading = false) {
+// --- ATUALIZAÇÃO VISUAL (Modificado para suportar Expirado) ---
+function updateButtonVisuals(
+  btn,
+  attempts,
+  isLoading = false,
+  isExpired = false
+) {
   // Reseta classes
   btn.className = BTN_CLASS;
   btn.disabled = false;
 
   if (isLoading) {
     btn.classList.add("loading");
-    btn.textContent = "Chamando"; // O CSS adiciona o "..."
+    btn.textContent = "Chamando";
     btn.disabled = true;
     return;
   }
 
-  // Lógica das Cores
+  // Prioridade: Se expirou o tempo de 5 minutos
+  if (isExpired) {
+    btn.textContent = "Tempo de chamada excedido";
+    btn.classList.add("expired"); // Nova classe cinza
+    btn.disabled = true;
+    return;
+  }
+
+  // Lógica das Tentativas
   if (attempts === 0) {
     btn.textContent = "Chamar";
-    // Azul padrão (sem classe extra)
+    // Azul padrão
   } else if (attempts === 1) {
-    btn.textContent = "Chamar"; // Ou "Chamar (2ª)"
+    btn.textContent = "Chamar";
     btn.classList.add("attempt-1"); // Amarelo
   } else if (attempts === 2) {
-    btn.textContent = "Chamar"; // Ou "Chamar (3ª)"
+    btn.textContent = "Chamar";
     btn.classList.add("attempt-2"); // Vermelho
   } else if (attempts >= 3) {
-    btn.textContent = "Limite excedido";
+    btn.textContent = "Limite de chamadas excedido";
     btn.classList.add("attempt-blocked"); // Roxo
-    btn.disabled = true; // Bloqueia clique
+    btn.disabled = true;
   }
 }
+
 function showConfirmModal({
   title,
   message,
@@ -217,7 +246,6 @@ function showConfirmModal({
       resolve(true);
     };
 
-    // Clique fora cancela
     backdrop.onclick = (e) => {
       if (e.target === backdrop) {
         backdrop.remove();
@@ -226,8 +254,8 @@ function showConfirmModal({
     };
   });
 }
+
 async function showConfigModal() {
-  // ... (Mantive igual ao seu código original, só simplifiquei para caber aqui)
   const backdrop = document.createElement("div");
   backdrop.className = "pec-ext-modal-backdrop";
   backdrop.innerHTML = `
@@ -300,18 +328,15 @@ boot();
 
 function boot() {
   console.log("[PEC-EXT] Iniciando...");
-  injectStyles(); // Injeta o CSS
+  injectStyles();
 
   async function loadConfigOnce() {
     if (CONFIG_LOADED) return CACHED_CONFIG;
-
     CACHED_CONFIG = await getConfig();
     CONFIG_LOADED = true;
-
     if (!CACHED_CONFIG) {
       showConfigModal();
     }
-
     return CACHED_CONFIG;
   }
   (async () => {
@@ -326,6 +351,7 @@ function boot() {
     characterData: true,
     attributes: true,
   });
+  // Sincroniza a cada 1s para garantir atualizações visuais (ex: tempo expirado)
   setInterval(sync, 1000);
 }
 
@@ -371,30 +397,34 @@ function hasExactText(card, text) {
   return false;
 }
 
-// --- PRINCIPAL MUDANÇA AQUI ---
+// --- FUNÇÃO PRINCIPAL DE CRIAÇÃO E ATUALIZAÇÃO ---
 async function ensureButton(card) {
   if (!EXTENSION_ALIVE) return;
   let btn = card.querySelector(`.${BTN_CLASS}`);
   const menuBtn = card.querySelector(MENU_BTN_SEL);
 
-  // Se não tem botão de menu (card inválido) ou já tem nosso botão E JÁ ESTÁ configurado visualmente, retorna
-  // Nota: Removemos o return simples se o botão existe, pois precisamos atualizar a cor se o estado mudar externamente
   if (!menuBtn) return;
-
   const container = menuBtn.parentElement || menuBtn;
 
-  // Se o botão não existe, cria
+  // Cria botão se não existir
   if (!btn) {
     btn = document.createElement("button");
     btn.type = "button";
     btn.className = BTN_CLASS;
     btn.textContent = "Chamar";
     btn.dataset.processing = "false";
-    // Evento de Click
+
     btn.addEventListener("click", async () => {
       if (btn.dataset.processing === "true") return;
 
+      // Chama função de verificação antes do modal
       const patientName = getNomePaciente(card);
+
+      // Verificações preliminares (UI rápida) antes de abrir modal
+      // Nota: A lógica real robusta fica dentro do handleButtonClick,
+      // mas podemos checar o modal aqui.
+      // Optei por deixar toda lógica complexa no handleButtonClick
+      // para garantir que o estado esteja fresco.
 
       const confirmed = await showConfirmModal({
         title: "Confirmar chamada",
@@ -405,7 +435,6 @@ async function ensureButton(card) {
 
       if (!confirmed) return;
 
-      // 🔒 trava imediatamente
       btn.dataset.processing = "true";
       btn.disabled = true;
 
@@ -415,21 +444,30 @@ async function ensureButton(card) {
     container.insertBefore(btn, menuBtn);
   }
 
-  // ATUALIZAÇÃO VISUAL: Busca o estado atual e pinta o botão corretamente
-  // Fazemos isso a cada sync para garantir que se você atualizar a página, os botões voltem com a cor certa
+  // ATUALIZAÇÃO VISUAL CONSTANTE
   const config = CACHED_CONFIG;
   if (config) {
     const attemptsData = await getCallAttempts();
     const patientKey = getPatientKey(card, config.sectorId);
     const record = attemptsData[patientKey] || { attempts: 0 };
 
-    // Só atualiza visual se não estiver clicado/carregando no momento
+    // Verifica se expirou os 5 minutos
+    let isExpired = false;
+    if (record.firstCallAt) {
+      const now = new Date();
+      const firstCallTime = new Date(record.firstCallAt);
+      if (now - firstCallTime > TIME_WINDOW_MS) {
+        isExpired = true;
+      }
+    }
+
     if (btn.dataset.processing !== "true") {
-      updateButtonVisuals(btn, record.attempts);
+      updateButtonVisuals(btn, record.attempts, false, isExpired);
     }
   }
 }
 
+// --- LÓGICA DO CLIQUE COM RESTRIÇÕES ---
 async function handleButtonClick(card, btn) {
   const config = CACHED_CONFIG;
 
@@ -440,19 +478,47 @@ async function handleButtonClick(card, btn) {
     return;
   }
 
-  // 1. Recupera tentativas atuais
   const attemptsData = await getCallAttempts();
   const patientKey = getPatientKey(card, config.sectorId);
+  // Garante estrutura inicial
   const record = attemptsData[patientKey] || { attempts: 0, callId: null };
+  const now = new Date();
 
-  // Verifica se já excedeu antes de tentar chamar (segurança extra)
+  // --- REGRA 1: JANELA DE 5 MINUTOS ---
+  if (record.firstCallAt) {
+    const firstDiff = now - new Date(record.firstCallAt);
+    if (firstDiff > TIME_WINDOW_MS) {
+      // Excedeu 5 minutos
+      updateButtonVisuals(btn, record.attempts, false, true); // true = isExpired
+      btn.dataset.processing = "false";
+      return; // Para aqui
+    }
+  }
+
+  // --- REGRA 2: INTERVALO DE 10 SEGUNDOS ---
+  if (record.lastCallAt) {
+    const lastDiff = now - new Date(record.lastCallAt);
+    if (lastDiff < CLICK_DELAY_MS) {
+      alert(
+        "Paciente chamado recentemente. Aguarde alguns segundos para poder chamar novamente"
+      );
+
+      // Reseta estado do botão
+      btn.dataset.processing = "false";
+      btn.disabled = false;
+      return; // Para aqui
+    }
+  }
+
+  // --- REGRA 3: LIMITE DE TENTATIVAS ---
   if (record.attempts >= 3) {
     updateButtonVisuals(btn, 3);
+    btn.dataset.processing = "false";
     return;
   }
 
-  // 2. Muda para estado "Carregando..."
-  updateButtonVisuals(btn, record.attempts, true);
+  // --- SE PASSOU PELAS REGRAS, PROSEGUE ---
+  updateButtonVisuals(btn, record.attempts, true); // Loading state
 
   const nextAttempt = record.attempts + 1;
   let endpoint = "/call";
@@ -464,7 +530,7 @@ async function handleButtonClick(card, btn) {
     nextAttempt === 1
       ? {
           origem: "esus.dumont.sp.gov.br/lista-atendimento",
-          capturado_em: new Date().toISOString(),
+          capturado_em: now.toISOString(),
           doctorName: getUsuarioLogado(),
           patientName: getNomePaciente(card),
           sectorId: config.sectorId,
@@ -472,7 +538,7 @@ async function handleButtonClick(card, btn) {
         }
       : { callId: record.callId, attempt: nextAttempt };
 
-  // 3. Chama API
+  // Chama API via background script
   chrome.runtime.sendMessage(
     { type: "POST_TO_API", url: `http://localhost:3001${endpoint}`, payload },
     async (resp) => {
@@ -480,27 +546,42 @@ async function handleButtonClick(card, btn) {
         btn.dataset.processing = "false";
         btn.disabled = false;
         btn.textContent = "Erro API";
-        btn.className = BTN_CLASS; // Reseta cor para azul/padrão momentaneamente
-        setTimeout(() => updateButtonVisuals(btn, record.attempts), 2000); // Volta ao estado anterior
+        setTimeout(() => {
+          // Verifica expiração novamente ao restaurar visual
+          let isExp = false;
+          if (
+            record.firstCallAt &&
+            new Date() - new Date(record.firstCallAt) > TIME_WINDOW_MS
+          )
+            isExp = true;
+          updateButtonVisuals(btn, record.attempts, false, isExp);
+        }, 2000);
         return;
       }
 
-      // 4. Sucesso: Atualiza Storage e Visual
+      // SUCESSO
       let callId = record.callId;
       if (nextAttempt === 1) callId = resp.body?.id;
+
+      // Define firstCallAt: se já existe, mantém. Se não (1ª vez), define agora.
+      const firstCallAt = record.firstCallAt || now.toISOString();
 
       attemptsData[patientKey] = {
         attempts: nextAttempt,
         callId,
         status: "calling",
-        lastCallAt: new Date().toISOString(),
+        lastCallAt: now.toISOString(),
+        firstCallAt: firstCallAt, // Salva o tempo da 1ª chamada para controlar os 5 min
       };
 
       await saveCallAttempts(attemptsData);
 
-      // Aplica a nova cor baseada no novo número de tentativas
       btn.dataset.processing = "false";
-      updateButtonVisuals(btn, nextAttempt);
+
+      // Atualiza visual verificando expiração imediata (improvável aqui, mas consistente)
+      const diff = new Date() - new Date(firstCallAt);
+      const isExpiredNow = diff > TIME_WINDOW_MS;
+      updateButtonVisuals(btn, nextAttempt, false, isExpiredNow);
     }
   );
 }
